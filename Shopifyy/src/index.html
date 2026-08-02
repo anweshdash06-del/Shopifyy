@@ -3,247 +3,757 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shopiffy — Shop Smarter</title>
+<title>Shopiffy — Shop Smart, Shop Bold</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --navy:#12154D;
+    --indigo:#2E3192;
+    --amber:#F2A93B;
+    --cream:#FBF9F4;
+    --charcoal:#1C1B29;
+    --pink:#E23E57;
+    --line:#E7E4DA;
+    --white:#ffffff;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:'Inter',sans-serif;
+    background:var(--cream);
+    color:var(--charcoal);
+  }
+  h1,h2,h3,.brand,.nav-label,.btn{font-family:'Poppins',sans-serif;}
+  a{text-decoration:none;color:inherit;}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;}
+  img{display:block;max-width:100%;}
+
+  /* ===== Top utility bar ===== */
+  .topbar{
+    background:var(--navy);
+    color:#D9DAF0;
+    font-size:13px;
+  }
+  .topbar-inner{
+    max-width:1280px;margin:0 auto;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:6px 24px;
+  }
+  .location-btn{
+    display:flex;align-items:center;gap:6px;
+    color:#D9DAF0;
+    padding:4px 6px;border-radius:6px;
+    transition:background .15s;
+  }
+  .location-btn:hover{background:rgba(255,255,255,.08);}
+  .location-btn svg{flex-shrink:0;}
+  .location-text b{color:var(--white);font-weight:600;}
+  .location-text{opacity:.85;}
+  .topbar-right{display:flex;align-items:center;gap:18px;}
+  .topbar-right a{opacity:.85;transition:opacity .15s;}
+  .topbar-right a:hover{opacity:1;}
+
+  /* ===== Header ===== */
+  header.main{
+    background:var(--white);
+    border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:50;
+  }
+  .header-inner{
+    max-width:1280px;margin:0 auto;
+    display:flex;align-items:center;gap:28px;
+    padding:14px 24px;
+  }
+  .brand{
+    display:flex;align-items:center;gap:8px;
+    font-size:26px;font-weight:800;letter-spacing:-.5px;
+    color:var(--navy);flex-shrink:0;
+  }
+  .brand .mark{
+    width:36px;height:36px;border-radius:10px;
+    background:linear-gradient(135deg,var(--indigo),var(--navy));
+    display:flex;align-items:center;justify-content:center;
+    position:relative;flex-shrink:0;
+  }
+  .brand .mark::after{
+    content:"";
+    position:absolute;top:-4px;right:-4px;
+    width:12px;height:12px;border-radius:50%;
+    background:var(--amber);
+    box-shadow:0 0 0 3px var(--white);
+  }
+  .brand .mark svg{width:20px;height:20px;}
+  .brand small{
+    display:block;font-family:'Inter';font-size:10px;font-weight:600;
+    color:var(--amber);letter-spacing:1.5px;margin-top:-2px;
+  }
+
+  .search-wrap{flex:1;max-width:640px;}
+  .search-box{
+    display:flex;align-items:center;
+    border:2px solid var(--navy);border-radius:10px;
+    overflow:hidden;background:var(--white);
+    transition:box-shadow .15s;
+  }
+  .search-box:focus-within{box-shadow:0 0 0 3px rgba(46,49,146,.15);}
+  .search-box input{
+    flex:1;border:none;outline:none;padding:11px 14px;font-size:14px;
+    font-family:'Inter';background:transparent;
+  }
+  .search-box button{
+    background:var(--navy);color:var(--white);
+    padding:11px 18px;display:flex;align-items:center;gap:6px;
+    font-weight:600;font-size:14px;transition:background .15s;
+  }
+  .search-box button:hover{background:var(--indigo);}
+
+  .header-actions{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  .btn{
+    padding:9px 20px;border-radius:8px;font-weight:600;font-size:14px;
+    transition:all .15s;white-space:nowrap;
+  }
+  .btn-signin{
+    color:var(--navy);border:2px solid var(--navy);
+  }
+  .btn-signin:hover{background:var(--navy);color:var(--white);}
+  .btn-signup{
+    background:var(--amber);color:var(--navy);
+  }
+  .btn-signup:hover{background:#e0972a;}
+
+  .cart-btn{
+    position:relative;display:flex;align-items:center;gap:6px;
+    padding:9px 14px;border-radius:8px;font-weight:600;font-size:14px;
+    color:var(--charcoal);
+  }
+  .cart-btn:hover{background:var(--cream);}
+  .cart-badge{
+    position:absolute;top:0;right:6px;
+    background:var(--pink);color:var(--white);
+    font-size:10px;font-weight:700;
+    min-width:16px;height:16px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    padding:0 3px;
+  }
+
+  /* ===== Category strip ===== */
+  .cat-strip{
+    max-width:1280px;margin:0 auto;
+    display:flex;gap:6px;
+    padding:12px 24px 0;
+    overflow-x:auto;
+    scrollbar-width:none;
+  }
+  .cat-strip::-webkit-scrollbar{display:none;}
+  .cat-item{
+    display:flex;flex-direction:column;align-items:center;gap:8px;
+    padding:6px 16px 12px;flex-shrink:0;
+    border-bottom:3px solid transparent;
+    transition:border-color .15s;
+  }
+  .cat-item:hover{border-color:var(--amber);}
+  .cat-item.active{border-color:var(--indigo);}
+  .cat-icon{
+    width:44px;height:44px;border-radius:12px;
+    background:var(--cream);
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .15s;
+  }
+  .cat-item:hover .cat-icon{transform:translateY(-2px);}
+  .cat-icon svg{width:22px;height:22px;stroke:var(--indigo);}
+  .nav-label{font-size:12.5px;font-weight:500;color:var(--charcoal);}
+
+  /* ===== Hero banners ===== */
+  .hero-section{max-width:1280px;margin:0 auto;padding:20px 24px 0;}
+  .hero-grid{
+    display:grid;grid-template-columns:1.3fr 1.3fr 1fr;
+    gap:14px;
+  }
+  .hero-card{
+    position:relative;border-radius:16px;overflow:hidden;
+    min-height:280px;display:flex;flex-direction:column;justify-content:flex-end;
+    color:var(--white);isolation:isolate;
+  }
+  .hero-card img{
+    position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;
+  }
+  .hero-card::before{
+    content:"";position:absolute;inset:0;z-index:-1;
+    background:linear-gradient(180deg,rgba(18,21,77,.05) 20%,rgba(18,21,77,.88) 100%);
+  }
+  .hero-content{padding:22px;}
+  .hero-tag{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--amber);color:var(--navy);
+    font-size:11px;font-weight:700;letter-spacing:.5px;
+    padding:4px 10px;border-radius:100px;margin-bottom:10px;
+  }
+  .hero-content h3{font-size:22px;font-weight:700;margin-bottom:6px;}
+  .hero-content p{font-size:14px;opacity:.9;font-weight:500;}
+  .hero-card.ribbon::after{
+    content:"AD";position:absolute;top:14px;right:14px;
+    background:rgba(0,0,0,.35);color:#fff;font-size:10px;font-weight:600;
+    padding:3px 8px;border-radius:5px;z-index:2;
+  }
+  .hero-dots{
+    display:flex;justify-content:center;gap:6px;padding:14px 0 6px;
+  }
+  .hero-dots span{width:6px;height:6px;border-radius:50%;background:var(--line);}
+  .hero-dots span.active{background:var(--indigo);width:18px;border-radius:4px;}
+
+  /* ===== Category showcase ===== */
+  .showcase-section{max-width:1280px;margin:0 auto;padding:32px 24px 0;}
+  .showcase-card{
+    background:var(--white);border:1px solid var(--line);border-radius:18px;padding:24px;
+  }
+  .showcase-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:18px;}
+  .showcase-head h2{font-size:20px;font-weight:700;color:var(--navy);}
+  .gender-tabs{display:flex;gap:8px;}
+  .gender-tab{
+    padding:7px 18px;border-radius:100px;font-size:13px;font-weight:600;
+    border:1.5px solid var(--line);color:var(--charcoal);transition:all .15s;
+  }
+  .gender-tab:hover{border-color:var(--indigo);}
+  .gender-tab.active{background:var(--indigo);border-color:var(--indigo);color:var(--white);}
+  .showcase-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px;
+  }
+  .showcase-grid .product{width:100%;}
+
+  /* ===== Recommendation rail ===== */
+  .rail-section{max-width:1280px;margin:0 auto;padding:32px 24px 40px;}
+  .rail-card{
+    background:var(--white);border:1px solid var(--line);border-radius:18px;padding:24px;
+  }
+  .rail-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;}
+  .rail-head h2{font-size:20px;font-weight:700;color:var(--navy);}
+  .rail-head span{font-size:13px;color:var(--indigo);font-weight:600;}
+  .rail-scroll{
+    display:flex;gap:16px;overflow-x:auto;padding-bottom:6px;
+    scrollbar-width:thin;
+  }
+  .product{
+    flex:0 0 190px;border:1px solid var(--line);border-radius:12px;
+    overflow:hidden;background:var(--white);transition:box-shadow .15s,transform .15s;
+  }
+  .product:hover{box-shadow:0 10px 24px rgba(18,21,77,.12);transform:translateY(-3px);}
+  .product img{height:160px;width:100%;object-fit:cover;background:var(--cream);}
+  .product-info{padding:12px;}
+  .product-info .pname{font-size:13px;font-weight:600;margin-bottom:4px;}
+  .product-info .pprice{font-size:14px;font-weight:700;color:var(--navy);}
+  .product-info .pold{font-size:12px;color:#999;text-decoration:line-through;margin-left:6px;font-weight:400;}
+
+  /* ===== Auth modal ===== */
+  .modal-overlay{
+    display:none;position:fixed;inset:0;z-index:200;
+    background:rgba(18,21,77,.55);
+    align-items:center;justify-content:center;
+    padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-card{
+    background:var(--white);border-radius:18px;
+    width:100%;max-width:420px;
+    padding:32px;position:relative;
+    box-shadow:0 20px 60px rgba(0,0,0,.25);
+    animation:modalIn .2s ease;
+  }
+  @keyframes modalIn{
+    from{opacity:0;transform:translateY(10px) scale(.98);}
+    to{opacity:1;transform:translateY(0) scale(1);}
+  }
+  .modal-close{
+    position:absolute;top:16px;right:16px;
+    width:30px;height:30px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--charcoal);transition:background .15s;
+  }
+  .modal-close:hover{background:var(--cream);}
+  .modal-head{margin-bottom:22px;}
+  .modal-head .mark{
+    width:40px;height:40px;border-radius:10px;
+    background:linear-gradient(135deg,var(--indigo),var(--navy));
+    display:flex;align-items:center;justify-content:center;margin-bottom:14px;
+  }
+  .modal-head .mark svg{width:20px;height:20px;}
+  .modal-head h2{font-size:22px;font-weight:700;color:var(--navy);margin-bottom:4px;}
+  .modal-head p{font-size:13.5px;color:#6b6d85;}
+  .form-group{margin-bottom:16px;}
+  .form-group label{
+    display:block;font-size:12.5px;font-weight:600;color:var(--charcoal);margin-bottom:6px;
+  }
+  .form-group input,.form-group textarea{
+    width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:9px;
+    font-family:'Inter';font-size:14px;outline:none;transition:border-color .15s;
+    background:var(--cream);resize:none;
+  }
+  .form-group input:focus,.form-group textarea:focus{border-color:var(--indigo);background:var(--white);}
+  .form-submit{
+    width:100%;background:var(--navy);color:var(--white);
+    padding:12px;border-radius:9px;font-weight:700;font-size:14px;
+    margin-top:6px;transition:background .15s;
+  }
+  .form-submit:hover{background:var(--indigo);}
+  .modal-switch{
+    text-align:center;font-size:13px;color:#6b6d85;margin-top:16px;
+  }
+  .modal-switch button{color:var(--indigo);font-weight:600;}
+  .form-note{
+    font-size:11.5px;color:#8b8da3;text-align:center;margin-top:10px;
+  }
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--navy);color:var(--white);
+    padding:12px 22px;border-radius:10px;font-size:13.5px;font-weight:500;
+    z-index:300;display:none;box-shadow:0 10px 30px rgba(0,0,0,.25);
+  }
+  .toast.show{display:block;}
+
+  /* ===== Footer ===== */
+  footer{
+    background:var(--navy);color:#B9BAE0;padding:36px 24px;font-size:13px;
+    text-align:center;
+  }
+  footer .brand{color:var(--white);justify-content:center;margin-bottom:10px;font-size:20px;}
+  footer p{opacity:.7;margin-top:4px;}
+
+  @media(max-width:900px){
+    .hero-grid{grid-template-columns:1fr;}
+    .header-inner{flex-wrap:wrap;}
+    .search-wrap{order:3;max-width:100%;}
+  }
+</style>
 </head>
 <body>
 
-<!-- ========== HEADER ========== -->
-<header class="site-header">
-  <div class="header-top">
-    <div class="logo">Shop<span>iffy</span></div>
-    <div class="auth-buttons">
-      <button class="btn btn-outline">Sign Up</button>
-      <button class="btn btn-filled">Sign In</button>
+  <!-- Top utility bar -->
+  <div class="topbar">
+    <div class="topbar-inner">
+      <button class="location-btn" onclick="alert('Choose delivery location — coming soon!')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.5-7-11a7 7 0 1 1 14 0c0 4.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span class="location-text">Deliver to <b>Bhubaneswar, 751024</b></span>
+      </button>
+      <div class="topbar-right">
+        <a href="#" onclick="return false;">Track Order</a>
+        <a href="#" onclick="return false;">Help Center</a>
+        <a href="#" onclick="return false;">Sell on Shopiffy</a>
+      </div>
     </div>
   </div>
 
-  <div class="search-row">
-    <div class="search-bar">
-      <svg class="search-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="7"></circle>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-      </svg>
-      <input type="text" placeholder="Search for products and brands">
+  <!-- Header -->
+  <header class="main">
+    <div class="header-inner">
+      <a class="brand" href="#">
+        <span class="mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        </span>
+        <span>Shopiffy<small>SHOP SMART · SHOP BOLD</small></span>
+      </a>
+
+      <form class="search-wrap" onsubmit="event.preventDefault(); alert('Searching Shopiffy for: ' + document.getElementById('searchInput').value);">
+        <div class="search-box">
+          <input id="searchInput" type="text" placeholder="Search for products, brands and more">
+          <button type="submit">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          </button>
+        </div>
+      </form>
+
+      <div class="header-actions">
+        <button class="btn btn-signin" onclick="openModal('signInModal')">Sign In</button>
+        <button class="btn btn-signup" onclick="openModal('signUpModal')">Sign Up</button>
+        <button class="cart-btn" onclick="alert('Your cart is empty — start shopping!')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          Cart
+          <span class="cart-badge">3</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Category strip -->
+    <nav class="cat-strip" id="catStrip">
+      <!-- injected by JS -->
+    </nav>
+  </header>
+
+  <!-- Hero banners -->
+  <section class="hero-section">
+    <div class="hero-grid">
+      <div class="hero-card ribbon">
+        <img src="https://images.unsplash.com/photo-1592286927505-1def25115558?w=800&q=80" alt="Smartphones">
+        <div class="hero-content">
+          <span class="hero-tag">NEW ARRIVAL</span>
+          <h3>Pulse X5 5G</h3>
+          <p>From ₹11,999 · 6000mAh · 50MP AI Camera</p>
+        </div>
+      </div>
+      <div class="hero-card">
+        <img src="https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&q=80" alt="Laptop deals">
+        <div class="hero-content">
+          <span class="hero-tag">BIG SAVINGS DAYS</span>
+          <h3>UltraBook Pro 14</h3>
+          <p>From ₹42,990 · Up to 16GB RAM · 1TB SSD</p>
+        </div>
+      </div>
+      <div class="hero-card">
+        <img src="https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=800&q=80" alt="Fashion">
+        <div class="hero-content">
+          <span class="hero-tag">TRENDING</span>
+          <h3>Monsoon Edit</h3>
+          <p>Flat 60% off · Rainwear & essentials</p>
+        </div>
+      </div>
+    </div>
+    <div class="hero-dots">
+      <span class="active"></span><span></span><span></span><span></span><span></span>
+    </div>
+  </section>
+
+  <!-- Category showcase -->
+  <section class="showcase-section">
+    <div class="showcase-card">
+      <div class="showcase-head">
+        <h2 id="showcaseTitle">Fashion</h2>
+        <div class="gender-tabs" id="genderTabs">
+          <button class="gender-tab active" data-gender="male">Men</button>
+          <button class="gender-tab" data-gender="female">Women</button>
+        </div>
+      </div>
+      <div class="showcase-grid" id="showcaseGrid"></div>
+    </div>
+  </section>
+
+  <!-- Recommendation rail -->
+  <section class="rail-section">
+    <div class="rail-card">
+      <div class="rail-head">
+        <h2>Still browsing? Pick up where you left off</h2>
+        <span>View all →</span>
+      </div>
+      <div class="rail-scroll" id="productRail"></div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="brand">
+      <span class="mark" style="width:28px;height:28px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" width="16" height="16"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      </span>
+      Shopiffy
+    </div>
+    <p>© 2026 Shopiffy Retail Pvt. Ltd. · Built for demo purposes.</p>
+  </footer>
+
+  <!-- Sign Up modal -->
+  <div class="modal-overlay" id="signUpModal" onclick="if(event.target===this) closeModal('signUpModal')">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal('signUpModal')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="modal-head">
+        <span class="mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        </span>
+        <h2>Create your account</h2>
+        <p>Sign up to track orders, save addresses and check out faster.</p>
+      </div>
+      <form id="signUpForm" onsubmit="handleSignUp(event)">
+        <div class="form-group">
+          <label for="suName">Full Name</label>
+          <input type="text" id="suName" placeholder="e.g. Anwesh Mishra" required>
+        </div>
+        <div class="form-group">
+          <label for="suEmail">Email Address</label>
+          <input type="email" id="suEmail" placeholder="you@example.com" required>
+        </div>
+        <div class="form-group">
+          <label for="suPhone">Phone Number</label>
+          <input type="tel" id="suPhone" placeholder="+91 98765 43210" pattern="[0-9+\-\s]{7,15}" required>
+        </div>
+        <div class="form-group">
+          <label for="suLocation">Location (City / Pincode)</label>
+          <input type="text" id="suLocation" placeholder="e.g. Bhubaneswar, 751024" required>
+        </div>
+        <div class="form-group">
+          <label for="suAddress">Full Address</label>
+          <textarea id="suAddress" rows="3" placeholder="House no., street, landmark" required></textarea>
+        </div>
+        <button type="submit" class="form-submit">Sign Up &amp; Save Details</button>
+        <p class="form-note">Your details are saved to this session and included in the downloadable Excel sheet.</p>
+      </form>
+      <div class="modal-switch">Already have an account? <button onclick="closeModal('signUpModal'); openModal('signInModal');">Sign In</button></div>
     </div>
   </div>
 
-  <!-- ========== CATEGORY NAV ========== -->
-  <nav class="category-nav">
-    <a href="#" class="cat-item active">
-      <span class="cat-icon">🛍️</span><span>For You</span>
-    </a>
-    <a href="#fashion" class="cat-item">
-      <span class="cat-icon">👗</span><span>Fashion</span>
-    </a>
-    <a href="#mobiles" class="cat-item">
-      <span class="cat-icon">📱</span><span>Mobiles</span>
-    </a>
-    <a href="#electronics" class="cat-item">
-      <span class="cat-icon">💻</span><span>Electronics</span>
-    </a>
-    <a href="#beauty" class="cat-item">
-      <span class="cat-icon">💄</span><span>Beauty</span>
-    </a>
-    <a href="#home" class="cat-item">
-      <span class="cat-icon">🛋️</span><span>Home</span>
-    </a>
-    <a href="#appliances" class="cat-item">
-      <span class="cat-icon">🧊</span><span>Appliances</span>
-    </a>
-    <a href="#toys" class="cat-item">
-      <span class="cat-icon">🧸</span><span>Toys &amp; Baby</span>
-    </a>
-    <a href="#sports" class="cat-item">
-      <span class="cat-icon">🏸</span><span>Sports</span>
-    </a>
-    <a href="#furniture" class="cat-item">
-      <span class="cat-icon">🪑</span><span>Furniture</span>
-    </a>
-  </nav>
-</header>
-
-<main>
-
-  <!-- ========== PROMO BANNERS ========== -->
-  <section class="promo-strip">
-    <div class="promo-card promo-1">
-      <p class="promo-eyebrow">New Launch</p>
-      <h3>Nova Buds Air 2</h3>
-      <p class="promo-price">From ₹1,499*</p>
-      <p class="promo-sub">40 Hrs Playback | ANC</p>
-    </div>
-    <div class="promo-card promo-2">
-      <p class="promo-eyebrow">⚡ Big Value Days</p>
-      <h3>Orion Book 14</h3>
-      <p class="promo-price">From ₹8,999/M*</p>
-      <p class="promo-sub">Up to 16GB | 512GB SSD</p>
-    </div>
-    <div class="promo-card promo-3">
-      <p class="promo-eyebrow">Premium Pick</p>
-      <h3>Aria Slim Pro</h3>
-      <p class="promo-price">From ₹64,990*</p>
-      <p class="promo-sub">Crafted for the everyday elite</p>
-    </div>
-  </section>
-
-  <!-- ========== RECOMMENDED FOR YOU ========== -->
-  <section class="section-block">
-    <h2 class="section-title">Picked just for you</h2>
-    <p class="section-sub">Based on what you've been eyeing lately</p>
-    <div class="product-row">
-      <div class="product-card">
-        <div class="product-thumb thumb-1"></div>
-        <p class="product-name">Rain-Ready Trench Coat</p>
-        <p class="product-price">₹1,299</p>
+  <!-- Sign In modal -->
+  <div class="modal-overlay" id="signInModal" onclick="if(event.target===this) closeModal('signInModal')">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal('signInModal')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="modal-head">
+        <span class="mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        </span>
+        <h2>Welcome back</h2>
+        <p>Sign in with your registered email and password.</p>
       </div>
-      <div class="product-card">
-        <div class="product-thumb thumb-2"></div>
-        <p class="product-name">Adjustable Phone Stand</p>
-        <p class="product-price">₹349</p>
+      <form id="signInForm" onsubmit="handleSignIn(event)">
+        <div class="form-group">
+          <label for="siEmail">Email Address</label>
+          <input type="email" id="siEmail" placeholder="you@example.com" required>
+        </div>
+        <div class="form-group">
+          <label for="siPassword">Password</label>
+          <input type="password" id="siPassword" placeholder="Enter your password" required>
+        </div>
+        <button type="submit" class="form-submit">Sign In</button>
+      </form>
+      <div class="modal-switch">New to Shopiffy? <button onclick="closeModal('signInModal'); openModal('signUpModal');">Create an account</button></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  // ---- Category data (10 categories) ----
+  const categories = [
+    { label:"Fashion", icon:'<path d="M6 3 3 6l3 3 2-2v13h8V7l2 2 3-3-3-3-4 3H10L6 3Z"/>' },
+    { label:"Mobiles", icon:'<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>' },
+    { label:"Electronics", icon:'<rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8M12 18v3"/>' },
+    { label:"Beauty", icon:'<path d="M12 2c2 3 5 5 5 9a5 5 0 0 1-10 0c0-4 3-6 5-9Z"/>' },
+    { label:"Home", icon:'<path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/>' },
+    { label:"Appliances", icon:'<rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="8" r="2"/><path d="M8 16h8"/>' },
+    { label:"Toys & Baby", icon:'<circle cx="12" cy="8" r="4"/><path d="M8 21v-4a4 4 0 0 1 8 0v4"/>' },
+    { label:"Food", icon:'<path d="M4 3v7a4 4 0 0 0 4 4v7M9 3v11M15 3c-2 0-3 2-3 5s1 5 3 5v8"/>' },
+    { label:"Furniture", icon:'<path d="M4 10V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3M3 14h18v6H3zM5 14v-2M19 14v-2"/>' },
+    { label:"2 Wheelers", icon:'<circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17 9 8h6l3 9M9 8 7 5h3"/>' }
+  ];
+
+  const catStrip = document.getElementById('catStrip');
+  categories.forEach((c,i)=>{
+    const el = document.createElement('a');
+    el.href = "#";
+    el.className = "cat-item" + (i===0 ? " active" : "");
+    el.innerHTML = `
+      <div class="cat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${c.icon}</svg>
       </div>
-      <div class="product-card">
-        <div class="product-thumb thumb-3"></div>
-        <p class="product-name">Pulse X 5G, 8GB | 128GB</p>
-        <p class="product-price">₹11,999</p>
-      </div>
-      <div class="product-card">
-        <div class="product-thumb thumb-4"></div>
-        <p class="product-name">Flip Cover with Card Slot</p>
-        <p class="product-price">₹499</p>
-      </div>
-      <div class="product-card">
-        <div class="product-thumb thumb-5"></div>
-        <p class="product-name">Hardshell Cabin Trolley</p>
-        <p class="product-price">₹2,799</p>
-      </div>
-    </div>
-  </section>
+      <span class="nav-label">${c.label}</span>`;
+    el.onclick = (e)=>{
+      e.preventDefault();
+      document.querySelectorAll('.cat-item').forEach(x=>x.classList.remove('active'));
+      el.classList.add('active');
+      renderShowcase(c.label);
+    };
+    catStrip.appendChild(el);
+  });
 
-  <!-- ========== FASHION ========== -->
-  <section class="section-block" id="fashion">
-    <h2 class="section-title">Dress the part, every day</h2>
-    <p class="section-sub">Fresh fits for work, weekends and everything between</p>
-    <div class="product-row">
-      <div class="product-card"><div class="product-thumb thumb-6"></div><p class="product-name">Cotton Casual Shirt</p><p class="product-price">₹699</p></div>
-      <div class="product-card"><div class="product-thumb thumb-7"></div><p class="product-name">Slim Fit Denim Jeans</p><p class="product-price">₹1,199</p></div>
-      <div class="product-card"><div class="product-thumb thumb-8"></div><p class="product-name">Everyday Sneakers</p><p class="product-price">₹1,499</p></div>
-      <div class="product-card"><div class="product-thumb thumb-9"></div><p class="product-name">Layered Winter Jacket</p><p class="product-price">₹2,199</p></div>
-      <div class="product-card"><div class="product-thumb thumb-10"></div><p class="product-name">Everyday Tote Bag</p><p class="product-price">₹899</p></div>
-    </div>
-  </section>
+  // ---- Category showcase data (3-6 items per category) ----
+  const categoryData = {
+    "Fashion": {
+      male: [
+        { name:"Cotton Casual Shirt, Navy", price:"₹699", old:"₹1,399", img:"https://images.unsplash.com/photo-1602810316693-3667c854239a?w=400&q=80" },
+        { name:"Slim Fit Chinos, Khaki", price:"₹899", old:"₹1,799", img:"https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=400&q=80" },
+        { name:"Formal Full-Sleeve Shirt", price:"₹749", old:"₹1,499", img:"https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80" },
+        { name:"Denim Jeans, Slim Fit", price:"₹1,099", old:"₹2,199", img:"https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&q=80" },
+        { name:"Men's Polo T-Shirt", price:"₹499", old:"₹999", img:"https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?w=400&q=80" },
+        { name:"Track Pants, Grey", price:"₹649", old:"₹1,299", img:"https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=400&q=80" }
+      ],
+      female: [
+        { name:"Floral Wrap Dress", price:"₹899", old:"₹1,799", img:"https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&q=80" },
+        { name:"High-Waist Denim Jeans", price:"₹1,199", old:"₹2,399", img:"https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=400&q=80" },
+        { name:"Printed Kurti, Cotton", price:"₹649", old:"₹1,299", img:"https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400&q=80" },
+        { name:"Women's Blazer, Beige", price:"₹1,499", old:"₹2,999", img:"https://images.unsplash.com/photo-1591369822096-ffd140ec948f?w=400&q=80" },
+        { name:"Casual Crop Top", price:"₹449", old:"₹899", img:"https://images.unsplash.com/photo-1554568218-0f1715e72254?w=400&q=80" },
+        { name:"Pleated Midi Skirt", price:"₹799", old:"₹1,599", img:"https://images.unsplash.com/photo-1583496661160-fb5886a13d40?w=400&q=80" }
+      ]
+    },
+    "Mobiles": [
+      { name:"Pulse X5 5G, 128GB", price:"₹11,999", old:"₹14,999", img:"https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=80" },
+      { name:"NovaFlip Pro 256GB", price:"₹34,999", old:"₹39,999", img:"https://images.unsplash.com/photo-1598965675045-45c5e72c7d05?w=400&q=80" },
+      { name:"Aurora Lite 5G, 64GB", price:"₹8,499", old:"₹10,999", img:"https://images.unsplash.com/photo-1592286927505-1def25115558?w=400&q=80" },
+      { name:"CoreOne Max 128GB", price:"₹16,990", old:"₹21,990", img:"https://images.unsplash.com/photo-1523206489230-c012c64b2b48?w=400&q=80" },
+      { name:"Vento Air 5G, 128GB", price:"₹13,499", old:"₹16,999", img:"https://images.unsplash.com/photo-1580910051074-3eb694886505?w=400&q=80" },
+      { name:"Zenith Ultra 256GB", price:"₹45,999", old:"₹52,999", img:"https://images.unsplash.com/photo-1533228100845-08145b01de14?w=400&q=80" }
+    ],
+    "Electronics": [
+      { name:"UltraBook Pro 14 Laptop", price:"₹42,990", old:"₹49,990", img:"https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&q=80" },
+      { name:"CoreTower Desktop PC", price:"₹38,500", old:"₹44,500", img:"https://images.unsplash.com/photo-1587831990711-23ca6441447b?w=400&q=80" },
+      { name:"27\" 2K Monitor", price:"₹14,999", old:"₹18,999", img:"https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=400&q=80" },
+      { name:"Mechanical Keyboard", price:"₹2,299", old:"₹3,499", img:"https://images.unsplash.com/photo-1587829741301-4d13de4c9127?w=400&q=80" }
+    ],
+    "Beauty": [
+      { name:"Matte Lipstick Set", price:"₹549", old:"₹999", img:"https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=400&q=80" },
+      { name:"Vitamin C Face Serum", price:"₹699", old:"₹1,199", img:"https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&q=80" },
+      { name:"Perfume Mist, 100ml", price:"₹899", old:"₹1,599", img:"https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&q=80" },
+      { name:"Makeup Brush Kit", price:"₹449", old:"₹799", img:"https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=400&q=80" }
+    ],
+    "Home": [
+      { name:"Non-Stick Cookware Set", price:"₹1,899", old:"₹2,999", img:"https://images.unsplash.com/photo-1585515320310-259814833e62?w=400&q=80" },
+      { name:"Mixer Grinder, 750W", price:"₹2,199", old:"₹3,299", img:"https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=400&q=80" },
+      { name:"Cotton Bedsheet Set", price:"₹999", old:"₹1,799", img:"https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400&q=80" },
+      { name:"LED Table Lamp", price:"₹749", old:"₹1,299", img:"https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=400&q=80" }
+    ],
+    "Appliances": [
+      { name:"1.5 Ton Split AC", price:"₹32,990", old:"₹41,990", img:"https://images.unsplash.com/photo-1631545806609-cd0203d33e57?w=400&q=80" },
+      { name:"Personal Air Cooler, 40L", price:"₹6,499", old:"₹8,999", img:"https://images.unsplash.com/photo-1622633744594-1e0a3cf7cca0?w=400&q=80" },
+      { name:"Double Door Refrigerator", price:"₹24,990", old:"₹29,990", img:"https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=400&q=80" },
+      { name:"Front Load Washing Machine", price:"₹18,990", old:"₹23,990", img:"https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=400&q=80" }
+    ],
+    "Toys & Baby": [
+      { name:"Wooden Building Blocks", price:"₹599", old:"₹999", img:"https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=400&q=80" },
+      { name:"Baby Stroller, Foldable", price:"₹4,499", old:"₹6,999", img:"https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?w=400&q=80" },
+      { name:"Soft Plush Teddy Bear", price:"₹399", old:"₹699", img:"https://images.unsplash.com/photo-1559454403-b8fb88521f11?w=400&q=80" },
+      { name:"Remote Control Car", price:"₹899", old:"₹1,499", img:"https://images.unsplash.com/photo-1594787318286-3d835c1d207f?w=400&q=80" }
+    ],
+    "Food": [
+      { name:"6-Seater Dining Table Set", price:"₹15,999", old:"₹21,999", img:"https://images.unsplash.com/photo-1617806118233-18e1de247200?w=400&q=80" },
+      { name:"Ceramic Dinner Set, 24pc", price:"₹1,799", old:"₹2,799", img:"https://images.unsplash.com/photo-1578474846511-04ba529f0b88?w=400&q=80" },
+      { name:"Table Centerpiece Decor", price:"₹549", old:"₹899", img:"https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&q=80" },
+      { name:"Glass Serving Bowl Set", price:"₹699", old:"₹1,199", img:"https://images.unsplash.com/photo-1584346133934-a3a2f4c8f0a9?w=400&q=80" }
+    ],
+    "Furniture": [
+      { name:"Engineered Wood Door", price:"₹4,999", old:"₹6,999", img:"https://images.unsplash.com/photo-1509644851169-2acc08aa25b5?w=400&q=80" },
+      { name:"Study Table, Oak Finish", price:"₹3,499", old:"₹4,999", img:"https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=400&q=80" },
+      { name:"Room Partition Screen", price:"₹2,899", old:"₹4,299", img:"https://images.unsplash.com/photo-1616627547584-bf28cee262db?w=400&q=80" },
+      { name:"Front Load Washing Machine", price:"₹18,990", old:"₹23,990", img:"https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=400&q=80" },
+      { name:"3-Seater Fabric Sofa", price:"₹16,999", old:"₹22,999", img:"https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80" }
+    ],
+    "2 Wheelers": [
+      { name:"Mountain Bicycle, 21-Speed", price:"₹6,999", old:"₹9,999", img:"https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=400&q=80" },
+      { name:"Electric Scooter, 60km Range", price:"₹54,999", old:"₹64,999", img:"https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=400&q=80" },
+      { name:"Kids Bicycle, 16-inch", price:"₹3,499", old:"₹4,999", img:"https://images.unsplash.com/photo-1571333250630-f0230c320b8d?w=400&q=80" },
+      { name:"Full-Face Riding Helmet", price:"₹1,299", old:"₹2,199", img:"https://images.unsplash.com/photo-1591637333472-6a45c6b8d6f6?w=400&q=80" }
+    ]
+  };
 
-  <!-- ========== MOBILES ========== -->
-  <section class="section-block" id="mobiles">
-    <h2 class="section-title">Power in your pocket</h2>
-    <p class="section-sub">The latest launches, without the wait</p>
-    <div class="product-row">
-      <div class="product-card"><div class="product-thumb thumb-3"></div><p class="product-name">Pulse X 5G</p><p class="product-price">₹11,999</p></div>
-      <div class="product-card"><div class="product-thumb thumb-11"></div><p class="product-name">Vertex Lite 44W</p><p class="product-price">₹9,499</p></div>
-      <div class="product-card"><div class="product-thumb thumb-12"></div><p class="product-name">Nimbus 5G Pro</p><p class="product-price">₹18,990</p></div>
-      <div class="product-card"><div class="product-thumb thumb-4"></div><p class="product-name">Flip Cover Combo</p><p class="product-price">₹499</p></div>
-      <div class="product-card"><div class="product-thumb thumb-13"></div><p class="product-name">65W GaN Charger</p><p class="product-price">₹1,199</p></div>
-    </div>
-  </section>
+  function buildProductCard(p){
+    const card = document.createElement('div');
+    card.className = "product";
+    card.innerHTML = `
+      <img src="${p.img}" alt="${p.name}">
+      <div class="product-info">
+        <div class="pname">${p.name}</div>
+        <div class="pprice">${p.price}<span class="pold">${p.old}</span></div>
+      </div>`;
+    card.onclick = ()=> alert(`Opening: ${p.name}`);
+    return card;
+  }
 
-  <!-- ========== ELECTRONICS ========== -->
-  <section class="section-block" id="electronics">
-    <h2 class="section-title">Gear up for more</h2>
-    <p class="section-sub">Laptops, audio and accessories that keep pace with you</p>
-    <div class="product-row">
-      <div class="product-card"><div class="product-thumb thumb-2"></div><p class="product-name">Orion Book 14</p><p class="product-price">₹52,990</p></div>
-      <div class="product-card"><div class="product-thumb thumb-1a"></div><p class="product-name">Nova Buds Air 2</p><p class="product-price">₹1,499</p></div>
-      <div class="product-card"><div class="product-thumb thumb-14"></div><p class="product-name">27" QHD Monitor</p><p class="product-price">₹16,499</p></div>
-      <div class="product-card"><div class="product-thumb thumb-15"></div><p class="product-name">Mechanical Keyboard</p><p class="product-price">₹2,999</p></div>
-      <div class="product-card"><div class="product-thumb thumb-16"></div><p class="product-name">Portable SSD 1TB</p><p class="product-price">₹6,499</p></div>
-    </div>
-  </section>
+  function renderShowcase(label, gender){
+    const title = document.getElementById('showcaseTitle');
+    const grid = document.getElementById('showcaseGrid');
+    const tabs = document.getElementById('genderTabs');
+    title.textContent = label;
+    grid.innerHTML = "";
 
-  <!-- ========== BEAUTY ========== -->
-  <section class="section-block" id="beauty">
-    <h2 class="section-title">Your everyday glow-up</h2>
-    <p class="section-sub">Skin and hair essentials worth the hype</p>
-    <div class="product-row">
-      <div class="product-card"><div class="product-thumb thumb-17"></div><p class="product-name">Vitamin C Face Serum</p><p class="product-price">₹599</p></div>
-      <div class="product-card"><div class="product-thumb thumb-18"></div><p class="product-name">Matte Lipstick Set</p><p class="product-price">₹799</p></div>
-      <div class="product-card"><div class="product-thumb thumb-19"></div><p class="product-name">Argan Hair Oil</p><p class="product-price">₹349</p></div>
-      <div class="product-card"><div class="product-thumb thumb-20"></div><p class="product-name">SPF 50 Sunscreen</p><p class="product-price">₹449</p></div>
-      <div class="product-card"><div class="product-thumb thumb-21"></div><p class="product-name">Travel Grooming Kit</p><p class="product-price">₹999</p></div>
-    </div>
-  </section>
+    if(label === "Fashion"){
+      tabs.style.display = "flex";
+      const g = gender || "male";
+      document.querySelectorAll('.gender-tab').forEach(t=>{
+        t.classList.toggle('active', t.dataset.gender === g);
+      });
+      categoryData["Fashion"][g].forEach(p=> grid.appendChild(buildProductCard(p)));
+    } else {
+      tabs.style.display = "none";
+      (categoryData[label] || []).forEach(p=> grid.appendChild(buildProductCard(p)));
+    }
+  }
 
-  <!-- ========== HOME ========== -->
-  <section class="section-block" id="home">
-    <h2 class="section-title">Make it feel like home</h2>
-    <p class="section-sub">Decor and essentials for every corner</p>
-    <div class="product-row">
-      <div class="product-card"><div class="product-thumb thumb-22"></div><p class="product-name">Warm Glow Table Lamp</p><p class="product-price">₹1,099</p></div>
-      <div class="product-card"><div class="product-thumb thumb-23"></div><p class="product-name">Cotton Bedsheet Set</p><p class="product-price">₹1,299</p></div>
-      <div class="product-card"><div class="product-thumb thumb-24"></div><p class="product-name">Ceramic Planter Trio</p><p class="product-price">₹699</p></div>
-      <div class="product-card"><div class="product-thumb thumb-25"></div><p class="product-name">Wall Art Frame Set</p><p class="product-price">₹899</p></div>
-      <div class="product-card"><div class="product-thumb thumb-26"></div><p class="product-name">Storage Basket Set</p><p class="product-price">₹649</p></div>
-    </div>
-  </section>
+  document.querySelectorAll('.gender-tab').forEach(tab=>{
+    tab.onclick = ()=> renderShowcase("Fashion", tab.dataset.gender);
+  });
 
-  <!-- ========== APPLIANCES ========== -->
-  <section class="section-block" id="appliances">
-    <h2 class="section-title">Everyday made easier</h2>
-    <p class="section-sub">Appliances that quietly do the heavy lifting</p>
-    <div class="product-row">
-      <div class="product-card"><div class="product-thumb thumb-27"></div><p class="product-name">5-Star Split AC 1.5T</p><p class="product-price">₹32,990</p></div>
-      <div class="product-card"><div class="product-thumb thumb-28"></div><p class="product-name">Double Door Fridge</p><p class="product-price">₹24,490</p></div>
-      <div class="product-card"><div class="product-thumb thumb-29"></div><p class="product-name">Front Load Washer 7kg</p><p class="product-price">₹19,990</p></div>
-      <div class="product-card"><div class="product-thumb thumb-30"></div><p class="product-name">Air Fryer 4L</p><p class="product-price">₹3,999</p></div>
-      <div class="product-card"><div class="product-thumb thumb-31"></div><p class="product-name">Mixer Grinder 750W</p><p class="product-price">₹2,499</p></div>
-    </div>
-  </section>
+  // Initial render on page load
+  renderShowcase("Fashion", "male");
 
-  <!-- ========== TOYS & BABY ========== -->
-  <section class="section-block" id="toys">
-    <h2 class="section-title">Little ones, big smiles</h2>
-    <p class="section-sub">Safe, fun picks for playtime and beyond</p>
-    <div class="product-row">
-      <div class="product-card"><div class="product-thumb thumb-32"></div><p class="product-name">Wooden Building Blocks</p><p class="product-price">₹599</p></div>
-      <div class="product-card"><div class="product-thumb thumb-33"></div><p class="product-name">Soft Plush Bunny</p><p class="product-price">₹399</p></div>
-      <div class="product-card"><div class="product-thumb thumb-34"></div><p class="product-name">Baby Stroller Lite</p><p class="product-price">₹5,499</p></div>
-      <div class="product-card"><div class="product-thumb thumb-35"></div><p class="product-name">RC Stunt Car</p><p class="product-price">₹1,299</p></div>
-      <div class="product-card"><div class="product-thumb thumb-36"></div><p class="product-name">Sketch &amp; Learn Kit</p><p class="product-price">₹449</p></div>
-    </div>
-  </section>
+  // ---- Product rail data ----
+  const products = [
+    { name:"Rain Poncho, Grey", price:"₹499", old:"₹999", img:"https://images.unsplash.com/photo-1520975954732-35dd22299614?w=400&q=80" },
+    { name:"Adjustable Phone Stand", price:"₹299", old:"₹599", img:"https://images.unsplash.com/photo-1580910051074-3eb694886505?w=400&q=80" },
+    { name:"Pulse X5 5G, 128GB", price:"₹11,999", old:"₹14,999", img:"https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=80" },
+    { name:"Leather Flip Wallet Case", price:"₹349", old:"₹699", img:"https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=400&q=80" },
+    { name:"Hardshell Cabin Trolley", price:"₹2,199", old:"₹3,999", img:"https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80" },
+    { name:"4K Smart LED TV 43\"", price:"₹19,990", old:"₹27,990", img:"https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=400&q=80" },
+    { name:"Wireless Over-ear Headset", price:"₹1,499", old:"₹2,999", img:"https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80" },
+    { name:"Ceramic Cookware Set", price:"₹1,899", old:"₹2,999", img:"https://images.unsplash.com/photo-1585515320310-259814833e62?w=400&q=80" }
+  ];
 
-  <!-- ========== SPORTS ========== -->
-  <section class="section-block" id="sports">
-    <h2 class="section-title">Move more, worry less</h2>
-    <p class="section-sub">Gear for game day and every day after</p>
-    <div class="product-row">
-      <div class="product-card"><div class="product-thumb thumb-37"></div><p class="product-name">Badminton Racket Combo</p><p class="product-price">₹899</p></div>
-      <div class="product-card"><div class="product-thumb thumb-38"></div><p class="product-name">Yoga Mat 6mm</p><p class="product-price">₹599</p></div>
-      <div class="product-card"><div class="product-thumb thumb-39"></div><p class="product-name">Adjustable Dumbbell Set</p><p class="product-price">₹1,999</p></div>
-      <div class="product-card"><div class="product-thumb thumb-40"></div><p class="product-name">Running Shoes Flexi</p><p class="product-price">₹1,799</p></div>
-      <div class="product-card"><div class="product-thumb thumb-41"></div><p class="product-name">Insulated Sports Bottle</p><p class="product-price">₹349</p></div>
-    </div>
-  </section>
+  const rail = document.getElementById('productRail');
+  products.forEach(p=>{
+    const card = document.createElement('div');
+    card.className = "product";
+    card.innerHTML = `
+      <img src="${p.img}" alt="${p.name}">
+      <div class="product-info">
+        <div class="pname">${p.name}</div>
+        <div class="pprice">${p.price}<span class="pold">${p.old}</span></div>
+      </div>`;
+    card.onclick = ()=> alert(`Opening: ${p.name}`);
+    rail.appendChild(card);
+  });
 
-  <!-- ========== FURNITURE ========== -->
-  <section class="section-block" id="furniture">
-    <h2 class="section-title">Furnish it your way</h2>
-    <p class="section-sub">Pieces built to fit real rooms and real budgets</p>
-    <div class="product-row">
-      <div class="product-card"><div class="product-thumb thumb-42"></div><p class="product-name">3-Seater Fabric Sofa</p><p class="product-price">₹18,999</p></div>
-      <div class="product-card"><div class="product-thumb thumb-43"></div><p class="product-name">Study Table with Shelf</p><p class="product-price">₹4,499</p></div>
-      <div class="product-card"><div class="product-thumb thumb-44"></div><p class="product-name">Queen Bed with Storage</p><p class="product-price">₹14,999</p></div>
-      <div class="product-card"><div class="product-thumb thumb-45"></div><p class="product-name">Ergonomic Office Chair</p><p class="product-price">₹6,999</p></div>
-      <div class="product-card"><div class="product-thumb thumb-46"></div><p class="product-name">Wooden Bookshelf 5-Tier</p><p class="product-price">₹3,299</p></div>
-    </div>
-  </section>
+  // ---- Auth modals ----
+  function openModal(id){
+    document.getElementById(id).classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(id){
+    document.getElementById(id).classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape'){
+      closeModal('signUpModal');
+      closeModal('signInModal');
+    }
+  });
 
-</main>
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(()=> t.classList.remove('show'), 3200);
+  }
 
-<footer class="site-footer">
-  <p>© 2026 Shopiffy. All rights reserved.</p>
-</footer>
+  // In-memory store for this browsing session (no browser storage APIs used)
+  const signUpRecords = [];
 
+  function handleSignUp(event){
+    event.preventDefault();
+    const record = {
+      "Name": document.getElementById('suName').value.trim(),
+      "Email": document.getElementById('suEmail').value.trim(),
+      "Phone": document.getElementById('suPhone').value.trim(),
+      "Location": document.getElementById('suLocation').value.trim(),
+      "Address": document.getElementById('suAddress').value.trim(),
+      "Signed Up At": new Date().toLocaleString()
+    };
+    signUpRecords.push(record);
+
+    // Build and download an Excel sheet of all sign-ups captured this session
+    const worksheet = XLSX.utils.json_to_sheet(signUpRecords);
+    worksheet['!cols'] = [{wch:20},{wch:26},{wch:16},{wch:22},{wch:32},{wch:20}];
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sign Ups");
+    XLSX.writeFile(workbook, "Shopiffy_SignUps.xlsx");
+
+    document.getElementById('signUpForm').reset();
+    closeModal('signUpModal');
+    showToast(`Welcome, ${record.Name.split(' ')[0]}! Your details were saved and exported to Shopiffy_SignUps.xlsx`);
+  }
+
+  function handleSignIn(event){
+    event.preventDefault();
+    const email = document.getElementById('siEmail').value.trim();
+    document.getElementById('signInForm').reset();
+    closeModal('signInModal');
+    showToast(`Signed in as ${email}. Welcome back to Shopiffy!`);
+  }
+</script>
 </body>
 </html>

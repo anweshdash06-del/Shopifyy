@@ -90,7 +90,7 @@
     color:var(--amber);letter-spacing:1.5px;margin-top:-2px;
   }
 
-  .search-wrap{flex:1;max-width:640px;}
+  .search-wrap{flex:1;max-width:640px;position:relative;}
   .search-box{
     display:flex;align-items:center;
     border:2px solid var(--navy);border-radius:10px;
@@ -108,6 +108,24 @@
     font-weight:600;font-size:14px;transition:background .15s;
   }
   .search-box button:hover{background:var(--indigo);}
+  .search-suggestions{
+    display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;
+    background:var(--white);border:1px solid var(--line);border-radius:12px;
+    max-height:360px;overflow-y:auto;z-index:80;
+    box-shadow:0 16px 36px rgba(18,21,77,.16);
+  }
+  .search-suggestions.show{display:block;}
+  .search-suggestion{
+    display:flex;align-items:center;gap:12px;padding:9px 14px;
+    cursor:pointer;transition:background .12s;
+  }
+  .search-suggestion:hover{background:var(--cream);}
+  .search-suggestion img{width:38px;height:38px;object-fit:cover;border-radius:8px;flex-shrink:0;}
+  .ss-info{min-width:0;flex:1;}
+  .ss-name{font-size:13.5px;font-weight:600;color:var(--charcoal);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ss-price{font-size:12px;color:var(--indigo);font-weight:600;}
+  .ss-cat{font-size:11px;color:#9698ab;flex-shrink:0;}
+  .search-empty{padding:14px;font-size:13px;color:#9698ab;font-style:italic;text-align:center;}
 
   .header-actions{display:flex;align-items:center;gap:10px;flex-shrink:0;}
   .btn{
@@ -522,13 +540,14 @@
         <span>Shopiffy<small>SHOP SMART · SHOP BOLD</small></span>
       </a>
 
-      <form class="search-wrap" onsubmit="event.preventDefault(); alert('Searching Shopiffy for: ' + document.getElementById('searchInput').value);">
+      <form class="search-wrap" autocomplete="off" onsubmit="handleSearchSubmit(event)">
         <div class="search-box">
-          <input id="searchInput" type="text" placeholder="Search for products, brands and more">
+          <input id="searchInput" type="text" placeholder="Search for products, brands and more" oninput="handleSearchInput(event)">
           <button type="submit">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
           </button>
         </div>
+        <div class="search-suggestions" id="searchSuggestions"></div>
       </form>
 
       <div class="header-actions">
@@ -807,84 +826,103 @@
     marqueeTrack.appendChild(card);
   });
 
-  // ---- Category showcase data (3-6 items per category) ----
+  // ---- Category showcase data (30 items per category, generated from base names x variants) ----
+  function fmt(n){ return '₹' + Math.round(n).toLocaleString('en-IN'); }
+
+  function buildCatalog(bases, basePrices, variants, imgPool){
+    const items = [];
+    bases.forEach((base, bi) => {
+      variants.forEach((variant, vi) => {
+        const price = Math.round((basePrices[bi] + vi * Math.round(basePrices[bi] * 0.06)) / 10) * 10;
+        const old = Math.round(price * 1.65 / 10) * 10;
+        const img = imgPool[(bi + vi) % imgPool.length];
+        items.push({ name: `${base}, ${variant}`, price: fmt(price), old: fmt(old), img });
+      });
+    });
+    return items;
+  }
+
+  const editions = ["Standard","Advanced","Pro","Compact","Value Pack"];
+
   const categoryData = {
     "Fashion": {
-      male: [
-        { name:"Cotton Casual Shirt, Navy", price:"₹699", old:"₹1,399", img:"https://images.unsplash.com/photo-1602810316693-3667c854239a?w=400&q=80" },
-        { name:"Slim Fit Chinos, Khaki", price:"₹899", old:"₹1,799", img:"https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=400&q=80" },
-        { name:"Formal Full-Sleeve Shirt", price:"₹749", old:"₹1,499", img:"https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80" },
-        { name:"Denim Jeans, Slim Fit", price:"₹1,099", old:"₹2,199", img:"https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&q=80" },
-        { name:"Men's Polo T-Shirt", price:"₹499", old:"₹999", img:"https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?w=400&q=80" },
-        { name:"Track Pants, Grey", price:"₹649", old:"₹1,299", img:"https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=400&q=80" }
-      ],
-      female: [
-        { name:"Floral Wrap Dress", price:"₹899", old:"₹1,799", img:"https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&q=80" },
-        { name:"High-Waist Denim Jeans", price:"₹1,199", old:"₹2,399", img:"https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=400&q=80" },
-        { name:"Printed Kurti, Cotton", price:"₹649", old:"₹1,299", img:"https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400&q=80" },
-        { name:"Women's Blazer, Beige", price:"₹1,499", old:"₹2,999", img:"https://images.unsplash.com/photo-1591369822096-ffd140ec948f?w=400&q=80" },
-        { name:"Casual Crop Top", price:"₹449", old:"₹899", img:"https://images.unsplash.com/photo-1554568218-0f1715e72254?w=400&q=80" },
-        { name:"Pleated Midi Skirt", price:"₹799", old:"₹1,599", img:"https://images.unsplash.com/photo-1583496661160-fb5886a13d40?w=400&q=80" }
-      ]
+      male: buildCatalog(
+        ["Cotton Casual Shirt","Slim Fit Chinos","Formal Full-Sleeve Shirt","Denim Jeans","Men's Polo T-Shirt","Track Pants"],
+        [699,899,749,1099,499,649],
+        ["Navy Blue","Khaki","White","Charcoal Grey","Olive Green"],
+        ["https://images.unsplash.com/photo-1602810316693-3667c854239a?w=400&q=80","https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=400&q=80","https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80","https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&q=80","https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?w=400&q=80","https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=400&q=80"]
+      ),
+      female: buildCatalog(
+        ["Floral Wrap Dress","High-Waist Denim Jeans","Printed Cotton Kurti","Women's Formal Blazer","Casual Crop Top","Pleated Midi Skirt"],
+        [899,1199,649,1499,449,799],
+        ["Rose Pink","Sky Blue","Mustard Yellow","Emerald Green","Classic Black"],
+        ["https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&q=80","https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=400&q=80","https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400&q=80","https://images.unsplash.com/photo-1591369822096-ffd140ec948f?w=400&q=80","https://images.unsplash.com/photo-1554568218-0f1715e72254?w=400&q=80","https://images.unsplash.com/photo-1583496661160-fb5886a13d40?w=400&q=80"]
+      )
     },
-    "Mobiles": [
-      { name:"Pulse X5 5G, 128GB", price:"₹11,999", old:"₹14,999", img:"https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=80" },
-      { name:"NovaFlip Pro 256GB", price:"₹34,999", old:"₹39,999", img:"https://images.unsplash.com/photo-1598965675045-45c5e72c7d05?w=400&q=80" },
-      { name:"Aurora Lite 5G, 64GB", price:"₹8,499", old:"₹10,999", img:"https://images.unsplash.com/photo-1592286927505-1def25115558?w=400&q=80" },
-      { name:"CoreOne Max 128GB", price:"₹16,990", old:"₹21,990", img:"https://images.unsplash.com/photo-1523206489230-c012c64b2b48?w=400&q=80" },
-      { name:"Vento Air 5G, 128GB", price:"₹13,499", old:"₹16,999", img:"https://images.unsplash.com/photo-1580910051074-3eb694886505?w=400&q=80" },
-      { name:"Zenith Ultra 256GB", price:"₹45,999", old:"₹52,999", img:"https://images.unsplash.com/photo-1533228100845-08145b01de14?w=400&q=80" }
-    ],
-    "Electronics": [
-      { name:"UltraBook Pro 14 Laptop", price:"₹42,990", old:"₹49,990", img:"https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&q=80" },
-      { name:"CoreTower Desktop PC", price:"₹38,500", old:"₹44,500", img:"https://images.unsplash.com/photo-1587831990711-23ca6441447b?w=400&q=80" },
-      { name:"27\" 2K Monitor", price:"₹14,999", old:"₹18,999", img:"https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=400&q=80" },
-      { name:"Mechanical Keyboard", price:"₹2,299", old:"₹3,499", img:"https://images.unsplash.com/photo-1587829741301-4d13de4c9127?w=400&q=80" }
-    ],
-    "Beauty": [
-      { name:"Matte Lipstick Set", price:"₹549", old:"₹999", img:"https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=400&q=80" },
-      { name:"Vitamin C Face Serum", price:"₹699", old:"₹1,199", img:"https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&q=80" },
-      { name:"Perfume Mist, 100ml", price:"₹899", old:"₹1,599", img:"https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&q=80" },
-      { name:"Makeup Brush Kit", price:"₹449", old:"₹799", img:"https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=400&q=80" }
-    ],
-    "Home": [
-      { name:"Non-Stick Cookware Set", price:"₹1,899", old:"₹2,999", img:"https://images.unsplash.com/photo-1585515320310-259814833e62?w=400&q=80" },
-      { name:"Mixer Grinder, 750W", price:"₹2,199", old:"₹3,299", img:"https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=400&q=80" },
-      { name:"Cotton Bedsheet Set", price:"₹999", old:"₹1,799", img:"https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400&q=80" },
-      { name:"LED Table Lamp", price:"₹749", old:"₹1,299", img:"https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=400&q=80" }
-    ],
-    "Appliances": [
-      { name:"1.5 Ton Split AC", price:"₹32,990", old:"₹41,990", img:"https://images.unsplash.com/photo-1631545806609-cd0203d33e57?w=400&q=80" },
-      { name:"Personal Air Cooler, 40L", price:"₹6,499", old:"₹8,999", img:"https://images.unsplash.com/photo-1622633744594-1e0a3cf7cca0?w=400&q=80" },
-      { name:"Double Door Refrigerator", price:"₹24,990", old:"₹29,990", img:"https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=400&q=80" },
-      { name:"Front Load Washing Machine", price:"₹18,990", old:"₹23,990", img:"https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=400&q=80" }
-    ],
-    "Toys & Baby": [
-      { name:"Wooden Building Blocks", price:"₹599", old:"₹999", img:"https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=400&q=80" },
-      { name:"Baby Stroller, Foldable", price:"₹4,499", old:"₹6,999", img:"https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?w=400&q=80" },
-      { name:"Soft Plush Teddy Bear", price:"₹399", old:"₹699", img:"https://images.unsplash.com/photo-1559454403-b8fb88521f11?w=400&q=80" },
-      { name:"Remote Control Car", price:"₹899", old:"₹1,499", img:"https://images.unsplash.com/photo-1594787318286-3d835c1d207f?w=400&q=80" }
-    ],
-    "Food": [
-      { name:"6-Seater Dining Table Set", price:"₹15,999", old:"₹21,999", img:"https://images.unsplash.com/photo-1617806118233-18e1de247200?w=400&q=80" },
-      { name:"Ceramic Dinner Set, 24pc", price:"₹1,799", old:"₹2,799", img:"https://images.unsplash.com/photo-1578474846511-04ba529f0b88?w=400&q=80" },
-      { name:"Table Centerpiece Decor", price:"₹549", old:"₹899", img:"https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&q=80" },
-      { name:"Glass Serving Bowl Set", price:"₹699", old:"₹1,199", img:"https://images.unsplash.com/photo-1584346133934-a3a2f4c8f0a9?w=400&q=80" }
-    ],
-    "Furniture": [
-      { name:"Engineered Wood Door", price:"₹4,999", old:"₹6,999", img:"https://images.unsplash.com/photo-1509644851169-2acc08aa25b5?w=400&q=80" },
-      { name:"Study Table, Oak Finish", price:"₹3,499", old:"₹4,999", img:"https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=400&q=80" },
-      { name:"Room Partition Screen", price:"₹2,899", old:"₹4,299", img:"https://images.unsplash.com/photo-1616627547584-bf28cee262db?w=400&q=80" },
-      { name:"Front Load Washing Machine", price:"₹18,990", old:"₹23,990", img:"https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=400&q=80" },
-      { name:"3-Seater Fabric Sofa", price:"₹16,999", old:"₹22,999", img:"https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80" }
-    ],
-    "2 Wheelers": [
-      { name:"Mountain Bicycle, 21-Speed", price:"₹6,999", old:"₹9,999", img:"https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=400&q=80" },
-      { name:"Electric Scooter, 60km Range", price:"₹54,999", old:"₹64,999", img:"https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=400&q=80" },
-      { name:"Kids Bicycle, 16-inch", price:"₹3,499", old:"₹4,999", img:"https://images.unsplash.com/photo-1571333250630-f0230c320b8d?w=400&q=80" },
-      { name:"Full-Face Riding Helmet", price:"₹1,299", old:"₹2,199", img:"https://images.unsplash.com/photo-1591637333472-6a45c6b8d6f6?w=400&q=80" }
-    ]
+    "Mobiles": buildCatalog(
+      ["Pulse X5 5G","NovaFlip Pro","Aurora Lite 5G","CoreOne Max","Vento Air 5G","Zenith Ultra"],
+      [11999,34999,8499,16990,13499,45999],
+      ["64GB","128GB","128GB Dual SIM","256GB","256GB Pro"],
+      ["https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=80","https://images.unsplash.com/photo-1598965675045-45c5e72c7d05?w=400&q=80","https://images.unsplash.com/photo-1592286927505-1def25115558?w=400&q=80","https://images.unsplash.com/photo-1523206489230-c012c64b2b48?w=400&q=80","https://images.unsplash.com/photo-1580910051074-3eb694886505?w=400&q=80","https://images.unsplash.com/photo-1533228100845-08145b01de14?w=400&q=80"]
+    ),
+    "Electronics": buildCatalog(
+      ["UltraBook Pro Laptop","CoreTower Desktop PC","27-inch 2K Monitor","Mechanical Keyboard","Wireless Mouse","Bluetooth Speaker"],
+      [42990,38500,14999,2299,1199,2499],
+      editions,
+      ["https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&q=80","https://images.unsplash.com/photo-1587831990711-23ca6441447b?w=400&q=80","https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=400&q=80","https://images.unsplash.com/photo-1587829741301-4d13de4c9127?w=400&q=80","https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400&q=80","https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&q=80"]
+    ),
+    "Beauty": buildCatalog(
+      ["Matte Lipstick Set","Vitamin C Face Serum","Signature Perfume Mist","Makeup Brush Kit","Hydrating Face Cream","Herbal Shampoo"],
+      [549,699,899,449,599,349],
+      editions,
+      ["https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=400&q=80","https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&q=80","https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&q=80","https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=400&q=80","https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&q=80","https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=400&q=80"]
+    ),
+    "Home": buildCatalog(
+      ["Non-Stick Cookware Set","Mixer Grinder 750W","Cotton Bedsheet Set","LED Table Lamp","Decorative Wall Clock","Storage Organizer Set"],
+      [1899,2199,999,749,599,899],
+      editions,
+      ["https://images.unsplash.com/photo-1585515320310-259814833e62?w=400&q=80","https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=400&q=80","https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400&q=80","https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=400&q=80","https://images.unsplash.com/photo-1563861826100-9cb868fdbe1c?w=400&q=80","https://images.unsplash.com/photo-1584589167171-541ce45f1eea?w=400&q=80"]
+    ),
+    "Appliances": buildCatalog(
+      ["Split Air Conditioner","Personal Air Cooler","Double Door Refrigerator","Front Load Washing Machine","Microwave Oven","Water Purifier"],
+      [32990,6499,24990,18990,8990,10990],
+      editions,
+      ["https://images.unsplash.com/photo-1631545806609-cd0203d33e57?w=400&q=80","https://images.unsplash.com/photo-1622633744594-1e0a3cf7cca0?w=400&q=80","https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=400&q=80","https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=400&q=80","https://images.unsplash.com/photo-1585659722983-3a675dabf23d?w=400&q=80","https://images.unsplash.com/photo-1626436819965-1738a15b6996?w=400&q=80"]
+    ),
+    "Toys & Baby": buildCatalog(
+      ["Wooden Building Blocks","Foldable Baby Stroller","Soft Plush Teddy Bear","Remote Control Car","Baby Feeding Bottle Set","Educational Puzzle Set"],
+      [599,4499,399,899,449,349],
+      editions,
+      ["https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=400&q=80","https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?w=400&q=80","https://images.unsplash.com/photo-1559454403-b8fb88521f11?w=400&q=80","https://images.unsplash.com/photo-1594787318286-3d835c1d207f?w=400&q=80","https://images.unsplash.com/photo-1602531256707-c7f0c95c86c3?w=400&q=80","https://images.unsplash.com/photo-1560859251-d563a49c5e56?w=400&q=80"]
+    ),
+    "Food": buildCatalog(
+      ["6-Seater Dining Table Set","Ceramic Dinner Set","Table Centerpiece Decor","Glass Serving Bowl Set","Stainless Steel Lunch Box","Insulated Water Bottle"],
+      [15999,1799,549,699,499,399],
+      editions,
+      ["https://images.unsplash.com/photo-1617806118233-18e1de247200?w=400&q=80","https://images.unsplash.com/photo-1578474846511-04ba529f0b88?w=400&q=80","https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&q=80","https://images.unsplash.com/photo-1584346133934-a3a2f4c8f0a9?w=400&q=80","https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&q=80","https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&q=80"]
+    ),
+    "Furniture": buildCatalog(
+      ["Engineered Wood Door","Study Table","Room Partition Screen","3-Seater Fabric Sofa","Bookshelf Unit","Bedside Table"],
+      [4999,3499,2899,16999,3999,1999],
+      ["Oak Finish","Walnut Finish","White Finish","Compact Size","Premium Finish"],
+      ["https://images.unsplash.com/photo-1509644851169-2acc08aa25b5?w=400&q=80","https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=400&q=80","https://images.unsplash.com/photo-1616627547584-bf28cee262db?w=400&q=80","https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80","https://images.unsplash.com/photo-1594620302200-9a762244a156?w=400&q=80","https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=400&q=80"]
+    ),
+    "2 Wheelers": buildCatalog(
+      ["Mountain Bicycle 21-Speed","Electric Scooter","Kids Bicycle 16-inch","Full-Face Riding Helmet","Cruiser Bicycle","Folding Bicycle"],
+      [6999,54999,3499,1299,8999,7999],
+      ["Standard","Sport Edition","Deluxe","Kids Edition","Pro"],
+      ["https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=400&q=80","https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=400&q=80","https://images.unsplash.com/photo-1571333250630-f0230c320b8d?w=400&q=80","https://images.unsplash.com/photo-1591637333472-6a45c6b8d6f6?w=400&q=80","https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=400&q=80","https://images.unsplash.com/photo-1517649763962-0c623066013b?w=400&q=80"]
+    )
   };
+
+  // ---- Flat search index across every category (used by the live search dropdown) ----
+  const searchIndex = [];
+  searchIndex.push(...categoryData.Fashion.male.map(p => ({ ...p, category:"Fashion" })));
+  searchIndex.push(...categoryData.Fashion.female.map(p => ({ ...p, category:"Fashion" })));
+  Object.keys(categoryData).forEach(key=>{
+    if(key === "Fashion") return;
+    searchIndex.push(...categoryData[key].map(p => ({ ...p, category:key })));
+  });
 
   function buildProductCard(p, category){
     const card = document.createElement('div');
@@ -956,6 +994,7 @@
       closeModal('signInModal');
       closeModal('pdpOverlay');
       closeModal('cartOverlay');
+      closeSuggestions();
     }
   });
 
@@ -1209,6 +1248,74 @@
       : `The Buy option for ${name} hasn't been decided yet — stay tuned!`;
     showToast(msg);
   }
+
+  // ---- Live search suggestions (matches anywhere in the name, e.g. "d" or "den" -> Denim Jeans) ----
+  let currentSuggestions = [];
+
+  function handleSearchInput(event){
+    const q = event.target.value.trim().toLowerCase();
+    const box = document.getElementById('searchSuggestions');
+
+    if(q.length === 0){
+      box.classList.remove('show');
+      box.innerHTML = "";
+      currentSuggestions = [];
+      return;
+    }
+
+    const matches = searchIndex.filter(p => p.name.toLowerCase().includes(q)).slice(0, 8);
+    currentSuggestions = matches;
+
+    if(matches.length === 0){
+      box.innerHTML = '<div class="search-empty">No products found for "' + q.replace(/</g,'&lt;') + '"</div>';
+      box.classList.add('show');
+      return;
+    }
+
+    box.innerHTML = matches.map((p, i) => `
+      <div class="search-suggestion" onclick="selectSearchResult(${i})">
+        <img src="${p.img}" alt="${p.name}">
+        <div class="ss-info">
+          <div class="ss-name">${p.name}</div>
+          <div class="ss-price">${p.price}</div>
+        </div>
+        <span class="ss-cat">${p.category}</span>
+      </div>`).join('');
+    box.classList.add('show');
+  }
+
+  function selectSearchResult(i){
+    const p = currentSuggestions[i];
+    if(!p) return;
+    closeSuggestions();
+    document.getElementById('searchInput').value = "";
+    openProductDetail(p, p.category);
+  }
+
+  function handleSearchSubmit(event){
+    event.preventDefault();
+    const q = document.getElementById('searchInput').value.trim().toLowerCase();
+    if(!q){ closeSuggestions(); return; }
+    const match = searchIndex.find(p => p.name.toLowerCase().includes(q));
+    if(match){
+      closeSuggestions();
+      document.getElementById('searchInput').value = "";
+      openProductDetail(match, match.category);
+    } else {
+      showToast(`No products found for "${q}"`);
+    }
+  }
+
+  function closeSuggestions(){
+    const box = document.getElementById('searchSuggestions');
+    box.classList.remove('show');
+    box.innerHTML = "";
+    currentSuggestions = [];
+  }
+
+  document.addEventListener('click', (e)=>{
+    if(!e.target.closest('.search-wrap')) closeSuggestions();
+  });
 </script>
 </body>
 </html>

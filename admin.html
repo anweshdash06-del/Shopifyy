@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shopiffy Admin — Control Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#12154D;
+    --indigo:#2E3192;
+    --amber:#F2A93B;
+    --cream:#FBF9F4;
+    --charcoal:#1C1B29;
+    --pink:#E23E57;
+    --green:#1E9E6B;
+    --line:#E7E4DA;
+    --white:#ffffff;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--charcoal);}
+  h1,h2,h3,.brand,.nav-item,button{font-family:'Poppins',sans-serif;}
+  button{cursor:pointer;border:none;font-family:inherit;}
+  img{display:block;max-width:100%;}
+
+  /* ===== Login gate ===== */
+  #loginGate{
+    position:fixed;inset:0;background:var(--navy);
+    display:flex;align-items:center;justify-content:center;z-index:200;
+  }
+  .login-card{
+    background:var(--white);border-radius:18px;padding:40px;width:360px;text-align:center;
+  }
+  .login-card .mark{
+    width:52px;height:52px;border-radius:14px;margin:0 auto 16px;
+    background:linear-gradient(135deg,var(--indigo),var(--navy));
+    display:flex;align-items:center;justify-content:center;
+  }
+  .login-card .mark svg{width:26px;height:26px;}
+  .login-card h2{font-size:20px;font-weight:700;color:var(--navy);margin-bottom:4px;}
+  .login-card p{font-size:13px;color:#6b6d85;margin-bottom:22px;}
+  .login-card input{
+    width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:9px;
+    font-size:14px;margin-bottom:12px;outline:none;background:var(--cream);
+  }
+  .login-card input:focus{border-color:var(--indigo);background:var(--white);}
+  .login-card button{
+    width:100%;background:var(--navy);color:var(--white);padding:12px;border-radius:9px;
+    font-weight:700;font-size:14px;transition:background .15s;
+  }
+  .login-card button:hover{background:var(--indigo);}
+  .login-hint{font-size:11.5px;color:#9698ab;margin-top:14px;}
+  .login-error{color:var(--pink);font-size:12.5px;margin-bottom:10px;display:none;}
+
+  /* ===== App shell ===== */
+  #app{display:none;min-height:100vh;}
+  .app-shell{display:flex;min-height:100vh;}
+
+  .sidebar{
+    width:230px;background:var(--navy);color:#D9DAF0;flex-shrink:0;
+    display:flex;flex-direction:column;padding:22px 0;
+  }
+  .sidebar .brand{
+    display:flex;align-items:center;gap:10px;color:var(--white);
+    font-size:19px;font-weight:800;padding:0 20px 22px;
+    border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:16px;
+  }
+  .sidebar .brand .mark{
+    width:32px;height:32px;border-radius:9px;flex-shrink:0;
+    background:linear-gradient(135deg,var(--amber),#c97f1c);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .sidebar .brand .mark svg{width:17px;height:17px;}
+  .sidebar .brand small{display:block;font-family:'Inter';font-size:9px;font-weight:600;color:var(--amber);letter-spacing:1px;}
+
+  .nav-item{
+    display:flex;align-items:center;gap:12px;padding:12px 20px;
+    color:#B9BAE0;font-size:14px;font-weight:500;border-left:3px solid transparent;
+    transition:all .15s;
+  }
+  .nav-item:hover{background:rgba(255,255,255,.06);color:var(--white);}
+  .nav-item.active{background:rgba(242,169,59,.12);color:var(--white);border-left-color:var(--amber);}
+  .nav-item svg{width:18px;height:18px;flex-shrink:0;}
+
+  .sidebar-footer{margin-top:auto;padding:16px 20px 0;}
+  .logout-btn{
+    width:100%;background:transparent;border:1.5px solid rgba(255,255,255,.2);
+    color:#D9DAF0;padding:10px;border-radius:8px;font-size:13px;font-weight:600;
+    transition:all .15s;
+  }
+  .logout-btn:hover{background:rgba(255,255,255,.08);color:var(--white);}
+
+  .main{flex:1;padding:28px 34px;max-width:1200px;}
+  .main h1{font-size:24px;font-weight:700;color:var(--navy);margin-bottom:4px;}
+  .main .subtitle{font-size:13.5px;color:#6b6d85;margin-bottom:26px;}
+
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  /* ===== Stat cards ===== */
+  .stats-grid{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px;
+  }
+  .stat-card{
+    background:var(--white);border:1px solid var(--line);border-radius:14px;padding:20px;
+  }
+  .stat-card .stat-label{font-size:12.5px;color:#6b6d85;font-weight:600;margin-bottom:8px;}
+  .stat-card .stat-value{font-size:26px;font-weight:800;color:var(--navy);}
+  .stat-card .stat-sub{font-size:11.5px;color:var(--green);font-weight:600;margin-top:4px;}
+
+  /* ===== Cards / tables ===== */
+  .panel-card{
+    background:var(--white);border:1px solid var(--line);border-radius:16px;padding:24px;margin-bottom:20px;
+  }
+  .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+  .panel-head h3{font-size:16px;font-weight:700;color:var(--navy);}
+  .btn-primary{
+    background:var(--navy);color:var(--white);padding:10px 18px;border-radius:9px;
+    font-weight:700;font-size:13.5px;transition:background .15s;display:inline-flex;align-items:center;gap:6px;
+  }
+  .btn-primary:hover{background:var(--indigo);}
+  .btn-amber{background:var(--amber);color:var(--navy);}
+  .btn-amber:hover{background:#e0972a;}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  thead th{
+    text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;
+    color:#9698ab;font-weight:700;padding:0 10px 10px;border-bottom:1.5px solid var(--line);
+  }
+  tbody td{padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--cream);}
+  .cell-thumb{width:44px;height:44px;object-fit:cover;border-radius:8px;background:var(--cream);}
+  .empty-row{text-align:center;color:#9698ab;font-style:italic;padding:30px 0;}
+
+  .status-badge{
+    display:inline-block;padding:4px 11px;border-radius:100px;font-size:11.5px;font-weight:700;
+  }
+  .status-Pending{background:#FFF3D6;color:#A66A00;}
+  .status-Shipped{background:#DCE8FF;color:#1B4EA6;}
+  .status-Delivered{background:#DAF3E6;color:#177A50;}
+  .status-Cancelled{background:#FBDCE1;color:#B02A45;}
+  select.status-select{
+    border:1.5px solid var(--line);border-radius:7px;padding:5px 8px;font-size:12.5px;
+    font-family:'Inter';color:var(--charcoal);background:var(--white);
+  }
+
+  .stars{color:var(--amber);display:inline-flex;gap:1px;}
+  .stars svg{width:13px;height:13px;fill:var(--amber);}
+  .stars svg.empty{fill:var(--line);}
+
+  .row-actions{display:flex;gap:8px;}
+  .icon-btn{
+    width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;
+    border:1.5px solid var(--line);color:var(--charcoal);transition:all .15s;
+  }
+  .icon-btn:hover{border-color:var(--indigo);color:var(--indigo);}
+  .icon-btn.danger:hover{border-color:var(--pink);color:var(--pink);}
+  .icon-btn svg{width:15px;height:15px;}
+
+  /* ===== Product form modal ===== */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(18,21,77,.55);
+    display:none;align-items:center;justify-content:center;z-index:100;padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-card{
+    background:var(--white);border-radius:18px;max-width:520px;width:100%;
+    max-height:88vh;overflow-y:auto;padding:28px;position:relative;
+  }
+  .modal-close{
+    position:absolute;top:18px;right:18px;width:32px;height:32px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;color:#6b6d85;
+  }
+  .modal-close:hover{background:var(--cream);}
+  .modal-card h2{font-size:19px;font-weight:700;color:var(--navy);margin-bottom:18px;}
+  .form-group{margin-bottom:15px;}
+  .form-group label{display:block;font-size:12.5px;font-weight:600;color:#4a4b5c;margin-bottom:6px;}
+  .form-group input[type=text],.form-group input[type=number],.form-group select,.form-group textarea{
+    width:100%;padding:10px 13px;border:1.5px solid var(--line);border-radius:9px;
+    font-family:'Inter';font-size:13.5px;outline:none;background:var(--cream);
+  }
+  .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--indigo);background:var(--white);}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .rating-input{display:flex;gap:4px;}
+  .rating-input svg{width:26px;height:26px;fill:var(--line);cursor:pointer;transition:fill .1s;}
+  .rating-input svg.filled{fill:var(--amber);}
+  .image-upload{
+    border:2px dashed var(--line);border-radius:10px;padding:16px;text-align:center;
+    cursor:pointer;transition:border-color .15s;
+  }
+  .image-upload:hover{border-color:var(--indigo);}
+  .image-upload img{max-height:110px;margin:0 auto 8px;border-radius:8px;}
+  .image-upload span{font-size:12.5px;color:#6b6d85;}
+  .form-submit{
+    width:100%;background:var(--navy);color:var(--white);padding:13px;border-radius:10px;
+    font-weight:700;font-size:14.5px;margin-top:6px;transition:background .15s;
+  }
+  .form-submit:hover{background:var(--indigo);}
+
+  .note-box{
+    background:#FFF8EA;border:1px solid #F2E0B8;border-radius:10px;padding:12px 16px;
+    font-size:12.5px;color:#8A6512;margin-bottom:20px;line-height:1.5;
+  }
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--navy);color:var(--white);padding:12px 22px;border-radius:10px;
+    font-size:13.5px;font-weight:600;z-index:300;display:none;box-shadow:0 12px 28px rgba(18,21,77,.3);
+  }
+  .toast.show{display:block;}
+
+  @media(max-width:800px){
+    .app-shell{flex-direction:column;}
+    .sidebar{width:100%;flex-direction:row;overflow-x:auto;padding:14px;}
+    .sidebar .brand{display:none;}
+    .nav-item{border-left:none;border-bottom:3px solid transparent;white-space:nowrap;padding:8px 14px;}
+    .nav-item.active{border-left-color:transparent;border-bottom-color:var(--amber);}
+    .sidebar-footer{display:none;}
+    .main{padding:20px;}
+    .form-row{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+  <!-- Login gate -->
+  <div id="loginGate">
+    <div class="login-card">
+      <div class="mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      </div>
+      <h2>Shopiffy Admin</h2>
+      <p>Owner access only — sign in to manage your store</p>
+      <div class="login-error" id="loginError">Incorrect password. Please try again.</div>
+      <input type="password" id="adminPassword" placeholder="Enter admin password" onkeydown="if(event.key==='Enter') tryLogin()">
+      <button onclick="tryLogin()">Sign In to Dashboard</button>
+      <div class="login-hint">Default password: <b>shopiffy2026</b> — change it in the code (ADMIN_PASSWORD).</div>
+    </div>
+  </div>
+
+  <!-- Main app -->
+  <div id="app">
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#12154D" stroke-width="2.4"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          </span>
+          <span>Shopiffy<small>ADMIN PANEL</small></span>
+        </div>
+
+        <a class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          Dashboard
+        </a>
+        <a class="nav-item" data-tab="orders" onclick="switchTab('orders', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          Orders
+        </a>
+        <a class="nav-item" data-tab="customers" onclick="switchTab('customers', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Customers
+        </a>
+        <a class="nav-item" data-tab="products" onclick="switchTab('products', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
+          Products
+        </a>
+
+        <div class="sidebar-footer">
+          <button class="logout-btn" onclick="logout()">Log Out</button>
+        </div>
+      </aside>
+
+      <main class="main">
+
+        <!-- ===== Dashboard ===== -->
+        <section class="tab-panel active" id="tab-dashboard">
+          <h1>Dashboard</h1>
+          <div class="subtitle">A quick snapshot of how Shopiffy is doing.</div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Total Orders</div>
+              <div class="stat-value" id="statOrders">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total Revenue</div>
+              <div class="stat-value" id="statRevenue">₹0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Registered Customers</div>
+              <div class="stat-value" id="statCustomers">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Products in Catalog</div>
+              <div class="stat-value" id="statProducts">0</div>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <div class="panel-head"><h3>Recent Orders</h3></div>
+            <table>
+              <thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th></tr></thead>
+              <tbody id="recentOrdersBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ===== Orders ===== -->
+        <section class="tab-panel" id="tab-orders">
+          <h1>Orders</h1>
+          <div class="subtitle">See who placed what, and update order status as it moves.</div>
+
+          <div class="note-box" id="ordersNote">
+            Showing sample orders for now — this table will fill automatically with real orders once checkout goes live on the storefront.
+          </div>
+
+          <div class="panel-card">
+            <table>
+              <thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Qty</th><th>Total</th><th>Date</th><th>Status</th></tr></thead>
+              <tbody id="ordersBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ===== Customers ===== -->
+        <section class="tab-panel" id="tab-customers">
+          <h1>Customers</h1>
+          <div class="subtitle">Everyone who has signed up on Shopiffy.</div>
+
+          <div class="panel-card">
+            <table>
+              <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Location</th><th>Address</th></tr></thead>
+              <tbody id="customersBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ===== Products ===== -->
+        <section class="tab-panel" id="tab-products">
+          <h1>Products</h1>
+          <div class="subtitle">Add new items, set prices and ratings, and manage what's live on Shopiffy.</div>
+
+          <div class="note-box">
+            Products you add here are saved to the admin dashboard. Tell me when you're ready and I'll wire this catalog into the live storefront so it shows up for customers automatically.
+          </div>
+
+          <div class="panel-card">
+            <div class="panel-head">
+              <h3>All Products</h3>
+              <button class="btn-primary btn-amber" onclick="openProductForm()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                Add New Product
+              </button>
+            </div>
+            <table>
+              <thead><tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Rating</th><th>Actions</th></tr></thead>
+              <tbody id="productsBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Product add/edit modal -->
+  <div class="modal-overlay" id="productModal" onclick="if(event.target===this) closeProductForm()">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeProductForm()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <h2 id="productFormTitle">Add New Product</h2>
+      <form onsubmit="saveProduct(event)">
+        <input type="hidden" id="productId">
+
+        <div class="form-group">
+          <label>Product Photo</label>
+          <div class="image-upload" onclick="document.getElementById('productImageInput').click()">
+            <img id="imagePreview" style="display:none;">
+            <span id="imageUploadLabel">Click to upload an image</span>
+          </div>
+          <input type="file" id="productImageInput" accept="image/*" style="display:none" onchange="handleImageUpload(event)">
+        </div>
+
+        <div class="form-group">
+          <label>Product Name</label>
+          <input type="text" id="productName" placeholder="e.g. Cotton Casual Shirt, Navy" required>
+        </div>
+
+        <div class="form-group">
+          <label>Category</label>
+          <select id="productCategory" required>
+            <option value="">Select a category</option>
+            <option>Fashion — Men</option>
+            <option>Fashion — Women</option>
+            <option>Mobiles</option>
+            <option>Electronics</option>
+            <option>Beauty</option>
+            <option>Home</option>
+            <option>Appliances</option>
+            <option>Toys & Baby</option>
+            <option>Food</option>
+            <option>Furniture</option>
+            <option>2 Wheelers</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Price (₹)</label>
+            <input type="number" id="productPrice" placeholder="999" min="0" required>
+          </div>
+          <div class="form-group">
+            <label>Old / Strikethrough Price (₹) — optional</label>
+            <input type="number" id="productOldPrice" placeholder="1499" min="0">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Rating</label>
+          <div class="rating-input" id="ratingInput"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Description — optional</label>
+          <textarea id="productDesc" rows="2" placeholder="Short product description..."></textarea>
+        </div>
+
+        <button type="submit" class="form-submit">Save Product</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  // ============================================================
+  // CONFIG
+  // ============================================================
+  const ADMIN_PASSWORD = "shopiffy2026"; // change this to whatever you like
+
+  // ============================================================
+  // LOGIN GATE
+  // ============================================================
+  function tryLogin(){
+    const input = document.getElementById('adminPassword').value;
+    if(input === ADMIN_PASSWORD){
+      document.getElementById('loginGate').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      initDashboard();
+    } else {
+      document.getElementById('loginError').style.display = 'block';
+    }
+  }
+  function logout(){
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('loginGate').style.display = 'flex';
+    document.getElementById('adminPassword').value = '';
+  }
+
+  // ============================================================
+  // TAB SWITCHING
+  // ============================================================
+  function switchTab(tab, el){
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    el.classList.add('active');
+  }
+
+  // ============================================================
+  // STORAGE HELPERS
+  // ============================================================
+  function loadOrders(){
+    let orders = JSON.parse(localStorage.getItem('shopiffyOrders') || 'null');
+    if(!orders){
+      // seed sample data so the dashboard isn't empty on first run
+      orders = [
+        { id:"SHP-1001", customer:"Ananya Roy", items:"Cotton Casual Shirt, Navy", qty:1, total:699, date:"2026-07-28", status:"Delivered" },
+        { id:"SHP-1002", customer:"Rahul Mehta", items:"Pulse X5 5G, 128GB", qty:1, total:11999, date:"2026-07-30", status:"Shipped" },
+        { id:"SHP-1003", customer:"Sneha Patil", items:"Floral Wrap Dress", qty:2, total:1798, date:"2026-07-31", status:"Pending" },
+        { id:"SHP-1004", customer:"Vikram Nair", items:"UltraBook Pro 14 Laptop", qty:1, total:42990, date:"2026-08-01", status:"Pending" },
+        { id:"SHP-1005", customer:"Priya Das", items:"Matte Lipstick Set", qty:3, total:1647, date:"2026-08-01", status:"Cancelled" }
+      ];
+      localStorage.setItem('shopiffyOrders', JSON.stringify(orders));
+    }
+    return orders;
+  }
+  function saveOrders(orders){ localStorage.setItem('shopiffyOrders', JSON.stringify(orders)); }
+
+  function loadCustomers(){
+    return JSON.parse(localStorage.getItem('shopiffySignUps') || '[]');
+  }
+
+  function loadProducts(){
+    return JSON.parse(localStorage.getItem('shopiffyAdminProducts') || '[]');
+  }
+  function saveProducts(products){ localStorage.setItem('shopiffyAdminProducts', JSON.stringify(products)); }
+
+  // ============================================================
+  // DASHBOARD
+  // ============================================================
+  function initDashboard(){
+    renderStats();
+    renderOrders();
+    renderCustomers();
+    renderProducts();
+  }
+
+  function renderStats(){
+    const orders = loadOrders();
+    const customers = loadCustomers();
+    const products = loadProducts();
+    const revenue = orders.reduce((sum,o) => sum + (o.status !== 'Cancelled' ? o.total : 0), 0);
+
+    document.getElementById('statOrders').textContent = orders.length;
+    document.getElementById('statRevenue').textContent = '₹' + revenue.toLocaleString('en-IN');
+    document.getElementById('statCustomers').textContent = customers.length;
+    document.getElementById('statProducts').textContent = products.length;
+
+    const recentBody = document.getElementById('recentOrdersBody');
+    const recent = orders.slice(-5).reverse();
+    recentBody.innerHTML = recent.length ? recent.map(o => `
+      <tr>
+        <td>${o.id}</td>
+        <td>${o.customer}</td>
+        <td>${o.items}</td>
+        <td>₹${o.total.toLocaleString('en-IN')}</td>
+        <td><span class="status-badge status-${o.status}">${o.status}</span></td>
+      </tr>`).join('') : `<tr><td colspan="5" class="empty-row">No orders yet</td></tr>`;
+  }
+
+  // ============================================================
+  // ORDERS TAB
+  // ============================================================
+  function renderOrders(){
+    const orders = loadOrders();
+    const body = document.getElementById('ordersBody');
+    body.innerHTML = orders.length ? orders.map((o,i) => `
+      <tr>
+        <td>${o.id}</td>
+        <td>${o.customer}</td>
+        <td>${o.items}</td>
+        <td>${o.qty}</td>
+        <td>₹${o.total.toLocaleString('en-IN')}</td>
+        <td>${o.date}</td>
+        <td>
+          <select class="status-select" onchange="updateOrderStatus(${i}, this.value)">
+            ${["Pending","Shipped","Delivered","Cancelled"].map(s => `<option ${s===o.status?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </td>
+      </tr>`).join('') : `<tr><td colspan="7" class="empty-row">No orders yet</td></tr>`;
+  }
+
+  function updateOrderStatus(index, newStatus){
+    const orders = loadOrders();
+    orders[index].status = newStatus;
+    saveOrders(orders);
+    renderOrders();
+    renderStats();
+    showToast(`Order ${orders[index].id} marked as ${newStatus}`);
+  }
+
+  // ============================================================
+  // CUSTOMERS TAB
+  // ============================================================
+  function renderCustomers(){
+    const customers = loadCustomers();
+    const body = document.getElementById('customersBody');
+    body.innerHTML = customers.length ? customers.map(c => `
+      <tr>
+        <td>${c.Name || c.name || '—'}</td>
+        <td>${c.Email || c.email || '—'}</td>
+        <td>${c.Phone || c.phone || '—'}</td>
+        <td>${c.Location || c.location || '—'}</td>
+        <td>${c.Address || c.address || '—'}</td>
+      </tr>`).join('') : `<tr><td colspan="5" class="empty-row">No customer sign-ups yet — this fills in automatically once someone creates an account on Shopiffy.</td></tr>`;
+  }
+
+  // ============================================================
+  // PRODUCTS TAB
+  // ============================================================
+  let currentRating = 5;
+
+  function renderProducts(){
+    const products = loadProducts();
+    const body = document.getElementById('productsBody');
+    body.innerHTML = products.length ? products.map((p,i) => `
+      <tr>
+        <td><img class="cell-thumb" src="${p.img || ''}" alt="${p.name}"></td>
+        <td>${p.name}</td>
+        <td>${p.category}</td>
+        <td>₹${Number(p.price).toLocaleString('en-IN')}${p.oldPrice ? `<span style="color:#999;text-decoration:line-through;font-size:11.5px;margin-left:6px;">₹${Number(p.oldPrice).toLocaleString('en-IN')}</span>` : ''}</td>
+        <td>${starRow(p.rating)}</td>
+        <td>
+          <div class="row-actions">
+            <button class="icon-btn" onclick="editProduct(${i})" title="Edit">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><path d="M18.4 2.6a2 2 0 1 1 3 3L12 15l-4 1 1-4Z"/></svg>
+            </button>
+            <button class="icon-btn danger" onclick="deleteProduct(${i})" title="Delete">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+            </button>
+          </div>
+        </td>
+      </tr>`).join('') : `<tr><td colspan="6" class="empty-row">No products added yet — click "Add New Product" to get started.</td></tr>`;
+  }
+
+  function starRow(rating){
+    const filled = '<svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.6 7-6.2-3.9L6 21.2l1.6-7L2.2 9.5l7.1-.6z"/></svg>';
+    const empty = '<svg class="empty" viewBox="0 0 24 24"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.6 7-6.2-3.9L6 21.2l1.6-7L2.2 9.5l7.1-.6z"/></svg>';
+    let out = '<span class="stars">';
+    for(let i=1;i<=5;i++) out += i<=rating ? filled : empty;
+    return out + '</span>';
+  }
+
+  function buildRatingInput(){
+    const wrap = document.getElementById('ratingInput');
+    wrap.innerHTML = '';
+    for(let i=1;i<=5;i++){
+      const star = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      star.setAttribute('viewBox','0 0 24 24');
+      star.innerHTML = '<path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.6 7-6.2-3.9L6 21.2l1.6-7L2.2 9.5l7.1-.6z"/>';
+      star.classList.toggle('filled', i <= currentRating);
+      star.onclick = () => { currentRating = i; buildRatingInput(); };
+      wrap.appendChild(star);
+    }
+  }
+
+  function openProductForm(editIndex){
+    document.getElementById('productFormTitle').textContent = editIndex !== undefined ? "Edit Product" : "Add New Product";
+    document.getElementById('productId').value = editIndex !== undefined ? editIndex : "";
+    document.getElementById('imagePreview').style.display = 'none';
+    document.getElementById('imageUploadLabel').textContent = "Click to upload an image";
+    imageDataUrl = "";
+
+    if(editIndex !== undefined){
+      const p = loadProducts()[editIndex];
+      document.getElementById('productName').value = p.name;
+      document.getElementById('productCategory').value = p.category;
+      document.getElementById('productPrice').value = p.price;
+      document.getElementById('productOldPrice').value = p.oldPrice || "";
+      document.getElementById('productDesc').value = p.desc || "";
+      currentRating = p.rating || 5;
+      if(p.img){
+        imageDataUrl = p.img;
+        document.getElementById('imagePreview').src = p.img;
+        document.getElementById('imagePreview').style.display = 'block';
+        document.getElementById('imageUploadLabel').textContent = "Click to change image";
+      }
+    } else {
+      document.getElementById('productName').value = "";
+      document.getElementById('productCategory').value = "";
+      document.getElementById('productPrice').value = "";
+      document.getElementById('productOldPrice').value = "";
+      document.getElementById('productDesc').value = "";
+      currentRating = 5;
+    }
+    buildRatingInput();
+    document.getElementById('productModal').classList.add('open');
+  }
+
+  function closeProductForm(){
+    document.getElementById('productModal').classList.remove('open');
+  }
+
+  function editProduct(index){ openProductForm(index); }
+
+  function deleteProduct(index){
+    const products = loadProducts();
+    const name = products[index].name;
+    if(!confirm(`Delete "${name}"? This can't be undone.`)) return;
+    products.splice(index, 1);
+    saveProducts(products);
+    renderProducts();
+    renderStats();
+    showToast(`${name} deleted`);
+  }
+
+  let imageDataUrl = "";
+  function handleImageUpload(event){
+    const file = event.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      imageDataUrl = e.target.result;
+      document.getElementById('imagePreview').src = imageDataUrl;
+      document.getElementById('imagePreview').style.display = 'block';
+      document.getElementById('imageUploadLabel').textContent = "Click to change image";
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function saveProduct(event){
+    event.preventDefault();
+    const idField = document.getElementById('productId').value;
+    const products = loadProducts();
+
+    const product = {
+      name: document.getElementById('productName').value.trim(),
+      category: document.getElementById('productCategory').value,
+      price: document.getElementById('productPrice').value,
+      oldPrice: document.getElementById('productOldPrice').value,
+      rating: currentRating,
+      desc: document.getElementById('productDesc').value.trim(),
+      img: imageDataUrl
+    };
+
+    if(idField !== ""){
+      products[parseInt(idField)] = product;
+      showToast(`${product.name} updated`);
+    } else {
+      products.push(product);
+      showToast(`${product.name} added to catalog`);
+    }
+
+    saveProducts(products);
+    renderProducts();
+    renderStats();
+    closeProductForm();
+  }
+
+  // ============================================================
+  // TOAST
+  // ============================================================
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+</script>
+</body>
+</html>

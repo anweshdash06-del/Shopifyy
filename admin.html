@@ -267,6 +267,14 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
           Products
         </a>
+        <a class="nav-item" data-tab="sellers" onclick="switchTab('sellers', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Sell Requests
+        </a>
+        <a class="nav-item" data-tab="helpcenter" onclick="switchTab('helpcenter', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2-3 4"/><path d="M12 17h.01"/></svg>
+          Help Center
+        </a>
 
         <div class="sidebar-footer">
           <button class="logout-btn" onclick="logout()">Log Out</button>
@@ -340,7 +348,7 @@
           <div class="subtitle">Add new items, set prices and ratings, and manage what's live on Shopiffy.</div>
 
           <div class="note-box">
-            Products you add here are saved to the admin dashboard. Tell me when you're ready and I'll wire this catalog into the live storefront so it shows up for customers automatically.
+            Products added here are live on the storefront automatically — they show up in the matching category (including Fashion Men/Women) as soon as a customer visits or refreshes the site.
           </div>
 
           <div class="panel-card">
@@ -354,6 +362,32 @@
             <table>
               <thead><tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Rating</th><th>Actions</th></tr></thead>
               <tbody id="productsBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ===== Sell Requests ===== -->
+        <section class="tab-panel" id="tab-sellers">
+          <h1>Sell Requests</h1>
+          <div class="subtitle">People who want to sell on Shopiffy — review their product, price, and contact details.</div>
+
+          <div class="panel-card">
+            <table>
+              <thead><tr><th>Photo</th><th>Seller</th><th>Product</th><th>Price</th><th>Contact</th><th>Address</th><th>Submitted</th></tr></thead>
+              <tbody id="sellersBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ===== Help Center ===== -->
+        <section class="tab-panel" id="tab-helpcenter">
+          <h1>Help Center</h1>
+          <div class="subtitle">Messages customers have sent in from the storefront's Help Center.</div>
+
+          <div class="panel-card">
+            <table>
+              <thead><tr><th>Name</th><th>Email</th><th>Message</th><th>Sent</th></tr></thead>
+              <tbody id="helpMessagesBody"></tbody>
             </table>
           </div>
         </section>
@@ -484,6 +518,14 @@
   }
   function saveProducts(products){ localStorage.setItem('shopiffyAdminProducts', JSON.stringify(products)); }
 
+  function loadSellers(){
+    return JSON.parse(localStorage.getItem('shopiffySellRequests') || '[]');
+  }
+
+  function loadHelpMessages(){
+    return JSON.parse(localStorage.getItem('shopiffyHelpMessages') || '[]');
+  }
+
   // ============================================================
   // DASHBOARD
   // ============================================================
@@ -492,6 +534,8 @@
     renderOrders();
     renderCustomers();
     renderProducts();
+    renderSellers();
+    renderHelpMessages();
   }
 
   function renderStats(){
@@ -565,6 +609,39 @@
         <td>${c.Location || c.location || '—'}</td>
         <td>${c.Address || c.address || '—'}</td>
       </tr>`).join('') : `<tr><td colspan="5" class="empty-row">No customer sign-ups yet — this fills in automatically once someone creates an account on Shopiffy.</td></tr>`;
+  }
+
+  // ============================================================
+  // SELL REQUESTS TAB
+  // ============================================================
+  function renderSellers(){
+    const sellers = loadSellers();
+    const body = document.getElementById('sellersBody');
+    body.innerHTML = sellers.length ? sellers.map(s => `
+      <tr>
+        <td><img class="cell-thumb" src="${s.img || ''}" alt="${s.productName}"></td>
+        <td>${s.name}</td>
+        <td>${s.productName}</td>
+        <td>₹${Number(s.price).toLocaleString('en-IN')}</td>
+        <td>${s.phone || '—'}<br><span style="color:#9698ab;font-size:11.5px;">${s.email || ''}</span></td>
+        <td>${s.address || '—'}</td>
+        <td>${s.date || '—'}</td>
+      </tr>`).join('') : `<tr><td colspan="7" class="empty-row">No sell requests yet — these will appear here when someone submits the "Sell on Shopiffy" form.</td></tr>`;
+  }
+
+  // ============================================================
+  // HELP CENTER TAB
+  // ============================================================
+  function renderHelpMessages(){
+    const messages = loadHelpMessages();
+    const body = document.getElementById('helpMessagesBody');
+    body.innerHTML = messages.length ? messages.map(m => `
+      <tr>
+        <td>${m.name}</td>
+        <td>${m.email}</td>
+        <td>${m.message}</td>
+        <td>${m.date || '—'}</td>
+      </tr>`).join('') : `<tr><td colspan="4" class="empty-row">No help messages yet — these will appear here when a customer posts a message from the storefront's Help Center.</td></tr>`;
   }
 
   // ============================================================
@@ -732,6 +809,8 @@
       renderOrders();
       renderCustomers();
     }
+    if(e.key === 'shopiffySellRequests') renderSellers();
+    if(e.key === 'shopiffyHelpMessages') renderHelpMessages();
   });
 </script>
 </body>

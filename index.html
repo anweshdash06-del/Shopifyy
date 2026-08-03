@@ -51,9 +51,16 @@
   .location-btn svg{flex-shrink:0;}
   .location-text b{color:var(--white);font-weight:600;}
   .location-text{opacity:.85;}
-  .topbar-right{display:flex;align-items:center;gap:18px;}
-  .topbar-right a{opacity:.85;transition:opacity .15s;}
-  .topbar-right a:hover{opacity:1;}
+  .topbar-right{display:flex;align-items:center;gap:10px;}
+  .topbar-link{
+    display:flex;align-items:center;gap:6px;
+    padding:6px 13px;border-radius:100px;
+    background:rgba(242,169,59,.14);border:1px solid rgba(242,169,59,.4);
+    color:var(--amber);font-weight:600;font-size:12.5px;
+    transition:all .15s;
+  }
+  .topbar-link svg{width:14px;height:14px;flex-shrink:0;}
+  .topbar-link:hover{background:var(--amber);color:var(--navy);transform:translateY(-1px);}
 
   /* ===== Header ===== */
   header.main{
@@ -309,6 +316,11 @@
   }
   .product:hover{box-shadow:0 10px 24px rgba(18,21,77,.12);transform:translateY(-3px);}
   .product img{height:160px;width:100%;object-fit:cover;background:var(--cream);}
+  .new-badge{
+    position:absolute;top:8px;left:8px;z-index:2;
+    background:var(--pink);color:var(--white);font-size:10px;font-weight:700;
+    padding:3px 9px;border-radius:100px;letter-spacing:.4px;
+  }
   .product-info{padding:12px;}
   .product-info .pname{font-size:13px;font-weight:600;margin-bottom:4px;}
   .product-info .pprice{font-size:14px;font-weight:700;color:var(--navy);}
@@ -350,6 +362,7 @@
   .modal-head h2{font-size:22px;font-weight:700;color:var(--navy);margin-bottom:4px;}
   .modal-head p{font-size:13.5px;color:#6b6d85;}
   .form-group{margin-bottom:16px;}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
   .form-group label{
     display:block;font-size:12.5px;font-weight:600;color:var(--charcoal);margin-bottom:6px;
   }
@@ -526,6 +539,78 @@
   .checkout-confirm h2{font-size:19px;font-weight:700;color:var(--navy);margin-bottom:10px;}
   .checkout-confirm p{font-size:13.5px;color:#4a4b5c;line-height:1.6;margin-bottom:22px;}
 
+  /* ===== Track Order ===== */
+  .track-card{max-width:560px;width:96%;max-height:88vh;overflow-y:auto;padding:30px;}
+  .track-lookup{display:flex;gap:10px;margin-bottom:6px;}
+  .track-lookup input{
+    flex:1;padding:11px 14px;border:1.5px solid var(--line);border-radius:9px;
+    font-size:14px;font-family:'Inter';outline:none;background:var(--cream);
+  }
+  .track-lookup input:focus{border-color:var(--indigo);background:var(--white);}
+  .track-lookup button{
+    background:var(--navy);color:var(--white);padding:11px 20px;border-radius:9px;
+    font-weight:700;font-size:13.5px;white-space:nowrap;transition:background .15s;
+  }
+  .track-lookup button:hover{background:var(--indigo);}
+  .track-hint{font-size:11.5px;color:#9698ab;margin-bottom:20px;}
+  .track-result{display:none;margin-top:10px;}
+  .track-result.show{display:block;}
+  .track-order-id{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:2px;}
+  .track-order-meta{font-size:12.5px;color:#6b6d85;margin-bottom:24px;}
+
+  .track-line{display:flex;align-items:flex-start;margin:0 4px 26px;}
+  .track-node{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;}
+  .track-node .dot{
+    width:26px;height:26px;border-radius:50%;background:var(--line);
+    display:flex;align-items:center;justify-content:center;color:#9698ab;
+    border:3px solid var(--white);box-shadow:0 0 0 2px var(--line);z-index:2;
+  }
+  .track-node .dot svg{width:13px;height:13px;}
+  .track-node.done .dot{background:var(--green);color:var(--white);box-shadow:0 0 0 2px var(--green);}
+  .track-node.current .dot{background:var(--amber);color:var(--navy);box-shadow:0 0 0 2px var(--amber);}
+  .track-node::before{
+    content:"";position:absolute;top:13px;left:-50%;width:100%;height:3px;
+    background:var(--line);z-index:1;
+  }
+  .track-node:first-child::before{display:none;}
+  .track-node.line-done::before{background:var(--green);}
+  .track-node .track-label{font-size:11.5px;font-weight:600;color:#6b6d85;margin-top:8px;text-align:center;}
+  .track-node.done .track-label,.track-node.current .track-label{color:var(--navy);}
+
+  .track-cancelled{
+    background:#FBDCE1;border:1px solid #F3B3C2;border-radius:12px;
+    padding:16px;text-align:center;color:#B02A45;font-weight:600;font-size:13.5px;margin-top:6px;
+  }
+  .track-not-found{font-size:13px;color:#9698ab;font-style:italic;text-align:center;padding:20px 0;}
+
+  /* ===== Help Center ===== */
+  .help-card{max-width:520px;width:96%;max-height:88vh;overflow-y:auto;padding:30px;}
+  .help-contact-row{display:flex;gap:12px;margin-bottom:22px;}
+  .help-contact-btn{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;
+    padding:16px 10px;border:1.5px solid var(--line);border-radius:12px;
+    transition:all .15s;text-align:center;
+  }
+  .help-contact-btn:hover{border-color:var(--indigo);background:#F7F6FD;}
+  .help-contact-btn svg{width:22px;height:22px;color:var(--indigo);}
+  .help-contact-btn .hc-title{font-size:13px;font-weight:700;color:var(--navy);}
+  .help-contact-btn .hc-sub{font-size:11px;color:#6b6d85;}
+  .help-divider{font-size:12px;color:#9698ab;text-align:center;margin:18px 0 14px;position:relative;}
+  .help-divider::before,.help-divider::after{
+    content:"";position:absolute;top:50%;width:38%;height:1px;background:var(--line);
+  }
+  .help-divider::before{left:0;} .help-divider::after{right:0;}
+
+  /* ===== Sell on Shopiffy ===== */
+  .sell-card{max-width:520px;width:96%;max-height:88vh;overflow-y:auto;padding:30px;}
+  .image-upload{
+    border:2px dashed var(--line);border-radius:10px;padding:16px;text-align:center;
+    cursor:pointer;transition:border-color .15s;
+  }
+  .image-upload:hover{border-color:var(--indigo);}
+  .image-upload img{max-height:110px;margin:0 auto 8px;border-radius:8px;}
+  .image-upload span{font-size:12.5px;color:#6b6d85;}
+
   @media(max-width:760px){
     .pdp-grid{grid-template-columns:1fr;}
     .pdp-image-wrap{height:260px;}
@@ -556,9 +641,18 @@
         <span class="location-text">Deliver to <b>Bhubaneswar, 751024</b></span>
       </button>
       <div class="topbar-right">
-        <a href="#" onclick="return false;">Track Order</a>
-        <a href="#" onclick="return false;">Help Center</a>
-        <a href="#" onclick="return false;">Sell on Shopiffy</a>
+        <a href="#" class="topbar-link" onclick="openTrackOrder(); return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="7" width="15" height="10" rx="1"/><path d="M16 10h3l4 4v3h-7z"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/></svg>
+          Track Order
+        </a>
+        <a href="#" class="topbar-link" onclick="openHelpCenter(); return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2-3 4"/><path d="M12 17h.01"/></svg>
+          Help Center
+        </a>
+        <a href="#" class="topbar-link" onclick="openSellForm(); return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Sell on Shopiffy
+        </a>
       </div>
     </div>
   </div>
@@ -884,6 +978,116 @@
     </div>
   </div>
 
+  <!-- Track Order -->
+  <div class="modal-overlay" id="trackOverlay" onclick="if(event.target===this) closeModal('trackOverlay')">
+    <div class="modal-card track-card">
+      <button class="modal-close" onclick="closeModal('trackOverlay')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="modal-head">
+        <h2>Track Your Order</h2>
+        <p>Enter the Order ID you received at checkout.</p>
+      </div>
+      <div class="track-lookup">
+        <input type="text" id="trackOrderInput" placeholder="e.g. SHP-12345678" onkeydown="if(event.key==='Enter') lookupOrder()">
+        <button onclick="lookupOrder()">Track</button>
+      </div>
+      <div class="track-hint">Your Order ID was shown on the "Thank you for your order!" confirmation screen.</div>
+      <div class="track-result" id="trackResult"></div>
+    </div>
+  </div>
+
+  <!-- Help Center -->
+  <div class="modal-overlay" id="helpOverlay" onclick="if(event.target===this) closeModal('helpOverlay')">
+    <div class="modal-card help-card">
+      <button class="modal-close" onclick="closeModal('helpOverlay')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="modal-head">
+        <h2>Help Center</h2>
+        <p>We're here to help — reach out however's easiest for you.</p>
+      </div>
+      <div class="help-contact-row">
+        <a class="help-contact-btn" href="mailto:shopiffy06@gmail.com">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>
+          <span class="hc-title">Email Us</span>
+          <span class="hc-sub">shopiffy06@gmail.com</span>
+        </a>
+        <button type="button" class="help-contact-btn" onclick="callSupport()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .3 2 .5 3 .7a2 2 0 0 1 1.7 2Z"/></svg>
+          <span class="hc-title">Call Us</span>
+          <span class="hc-sub">+91 90000 12345</span>
+        </button>
+      </div>
+      <div class="help-divider">or send us a message</div>
+      <form onsubmit="submitHelpMessage(event)">
+        <div class="form-group">
+          <label>Your Name</label>
+          <input type="text" id="helpName" required>
+        </div>
+        <div class="form-group">
+          <label>Your Email</label>
+          <input type="email" id="helpEmail" required>
+        </div>
+        <div class="form-group">
+          <label>Message</label>
+          <textarea id="helpMessage" rows="3" placeholder="Let us know what's on your mind..." required></textarea>
+        </div>
+        <button type="submit" class="form-submit">Post Message</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Sell on Shopiffy -->
+  <div class="modal-overlay" id="sellOverlay" onclick="if(event.target===this) closeModal('sellOverlay')">
+    <div class="modal-card sell-card">
+      <button class="modal-close" onclick="closeModal('sellOverlay')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="modal-head">
+        <h2>Sell on Shopiffy</h2>
+        <p>Tell us about your product and our team will get in touch.</p>
+      </div>
+      <form onsubmit="submitSellForm(event)">
+        <div class="form-group">
+          <label>Product Photo</label>
+          <div class="image-upload" onclick="document.getElementById('sellImageInput').click()">
+            <img id="sellImagePreview" style="display:none;">
+            <span id="sellImageLabel">Click to upload a photo of your product</span>
+          </div>
+          <input type="file" id="sellImageInput" accept="image/*" style="display:none" onchange="handleSellImageUpload(event)">
+        </div>
+        <div class="form-group">
+          <label>Your Full Name</label>
+          <input type="text" id="sellName" required>
+        </div>
+        <div class="form-group">
+          <label>What do you want to sell?</label>
+          <input type="text" id="sellProductName" placeholder="e.g. Hand-crafted wooden lamp" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Your Price (₹)</label>
+            <input type="number" id="sellPrice" min="0" required>
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" id="sellPhone" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="sellEmail" required>
+        </div>
+        <div class="form-group">
+          <label>Your Address</label>
+          <textarea id="sellAddress" rows="2" required></textarea>
+        </div>
+        <button type="submit" class="form-submit">Submit for Review</button>
+      </form>
+    </div>
+  </div>
+
 <script>
   // ---- Category data (10 categories) ----
   const categories = [
@@ -1044,7 +1248,8 @@
         old: oldNum ? '₹' + oldNum.toLocaleString('en-IN') : '',
         img: ap.img || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80',
         rating: ap.rating || 5,
-        desc: ap.desc || ''
+        desc: ap.desc || '',
+        isNew: true
       };
       if(ap.category === "Fashion — Men") categoryData.Fashion.male.push(item);
       else if(ap.category === "Fashion — Women") categoryData.Fashion.female.push(item);
@@ -1068,7 +1273,9 @@
   function buildProductCard(p, category){
     const card = document.createElement('div');
     card.className = "product";
+    card.style.position = "relative";
     card.innerHTML = `
+      ${p.isNew ? '<span class="new-badge">NEW</span>' : ''}
       <img src="${p.img}" alt="${p.name}">
       <div class="product-info">
         <div class="pname">${p.name}</div>
@@ -1136,6 +1343,9 @@
       closeModal('pdpOverlay');
       closeModal('cartOverlay');
       closeModal('checkoutOverlay');
+      closeModal('trackOverlay');
+      closeModal('helpOverlay');
+      closeModal('sellOverlay');
       closeSuggestions();
     }
   });
@@ -1503,6 +1713,142 @@
     closeModal('checkoutOverlay');
     closeModal('pdpOverlay');
     closeModal('cartOverlay');
+  }
+
+  // ============================================================
+  // TRACK ORDER
+  // ============================================================
+  function openTrackOrder(){
+    document.getElementById('trackOrderInput').value = '';
+    const resultBox = document.getElementById('trackResult');
+    resultBox.classList.remove('show');
+    resultBox.innerHTML = '';
+    openModal('trackOverlay');
+  }
+
+  function lookupOrder(){
+    const q = document.getElementById('trackOrderInput').value.trim().toLowerCase();
+    const resultBox = document.getElementById('trackResult');
+    if(!q) return;
+
+    const orders = JSON.parse(localStorage.getItem('shopiffyOrders') || '[]');
+    const order = orders.find(o =>
+      o.id.toLowerCase() === q || (o.email && o.email.toLowerCase() === q)
+    );
+
+    if(!order){
+      resultBox.innerHTML = '<div class="track-not-found">No order found for that Order ID or email. Double-check and try again.</div>';
+      resultBox.classList.add('show');
+      return;
+    }
+
+    resultBox.innerHTML = buildTrackerHTML(order);
+    resultBox.classList.add('show');
+  }
+
+  // Maps the exact 4 statuses the Admin Panel controls (Pending, Shipped, Delivered, Cancelled)
+  // onto a 4-stop visual timeline: Order Placed -> Shipped -> Out for Delivery -> Delivered.
+  function buildTrackerHTML(order){
+    const steps = ["Order Placed","Shipped","Out for Delivery","Delivered"];
+    const statusIndex = { "Pending":1, "Shipped":2, "Delivered":4 }[order.status] || 1;
+
+    let html = `
+      <div class="track-order-id">${order.id}</div>
+      <div class="track-order-meta">${order.items} &middot; ₹${order.total.toLocaleString('en-IN')} &middot; Ordered on ${order.date}</div>`;
+
+    if(order.status === "Cancelled"){
+      html += `<div class="track-cancelled">This order has been cancelled. Reach out via Help Center if you have questions.</div>`;
+      return html;
+    }
+
+    html += `<div class="track-line">`;
+    steps.forEach((label, i) => {
+      const idx = i + 1;
+      let cls = "track-node";
+      if(idx < statusIndex) cls += " done line-done";
+      else if(idx === statusIndex) cls += " current line-done";
+      const check = idx <= statusIndex
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>'
+        : '';
+      html += `<div class="${cls}"><div class="dot">${check}</div><div class="track-label">${label}</div></div>`;
+    });
+    html += `</div>`;
+    return html;
+  }
+
+  // ============================================================
+  // HELP CENTER
+  // ============================================================
+  function openHelpCenter(){
+    document.querySelector('#helpOverlay form').reset();
+    openModal('helpOverlay');
+  }
+
+  function callSupport(){
+    showToast("Connecting your call...");
+  }
+
+  function submitHelpMessage(event){
+    event.preventDefault();
+    const record = {
+      name: document.getElementById('helpName').value.trim(),
+      email: document.getElementById('helpEmail').value.trim(),
+      message: document.getElementById('helpMessage').value.trim(),
+      date: new Date().toLocaleString()
+    };
+    const all = JSON.parse(localStorage.getItem('shopiffyHelpMessages') || '[]');
+    all.push(record);
+    localStorage.setItem('shopiffyHelpMessages', JSON.stringify(all));
+
+    document.querySelector('#helpOverlay form').reset();
+    closeModal('helpOverlay');
+    showToast("Thanks! Your message has been sent to our support team.");
+  }
+
+  // ============================================================
+  // SELL ON SHOPIFFY
+  // ============================================================
+  let sellImageDataUrl = "";
+
+  function openSellForm(){
+    document.querySelector('#sellOverlay form').reset();
+    document.getElementById('sellImagePreview').style.display = 'none';
+    document.getElementById('sellImageLabel').textContent = "Click to upload a photo of your product";
+    sellImageDataUrl = "";
+    openModal('sellOverlay');
+  }
+
+  function handleSellImageUpload(event){
+    const file = event.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      sellImageDataUrl = e.target.result;
+      document.getElementById('sellImagePreview').src = sellImageDataUrl;
+      document.getElementById('sellImagePreview').style.display = 'block';
+      document.getElementById('sellImageLabel').textContent = "Click to change photo";
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function submitSellForm(event){
+    event.preventDefault();
+    const record = {
+      name: document.getElementById('sellName').value.trim(),
+      productName: document.getElementById('sellProductName').value.trim(),
+      price: document.getElementById('sellPrice').value,
+      phone: document.getElementById('sellPhone').value.trim(),
+      email: document.getElementById('sellEmail').value.trim(),
+      address: document.getElementById('sellAddress').value.trim(),
+      img: sellImageDataUrl,
+      date: new Date().toLocaleString()
+    };
+    const all = JSON.parse(localStorage.getItem('shopiffySellRequests') || '[]');
+    all.push(record);
+    localStorage.setItem('shopiffySellRequests', JSON.stringify(all));
+
+    closeModal('sellOverlay');
+    showToast(`Thanks ${record.name.split(' ')[0]}! We've received your request and will be in touch.`);
   }
 
   // ---- Live search suggestions (matches anywhere in the name, e.g. "d" or "den" -> Denim Jeans) ----

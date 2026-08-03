@@ -404,6 +404,7 @@
   .pdp-info h2{font-size:23px;font-weight:700;color:var(--navy);margin-bottom:8px;}
   .pdp-stars{display:inline-flex;gap:2px;color:var(--amber);margin-right:8px;}
   .pdp-stars svg{width:16px;height:16px;fill:var(--amber);}
+  .pdp-stars svg.empty{fill:var(--line);}
   .pdp-reviews{
     display:inline-block;font-size:12.5px;color:#6b6d85;
     vertical-align:middle;
@@ -494,6 +495,36 @@
     padding:13px;border-radius:10px;font-weight:700;font-size:14.5px;transition:background .15s;
   }
   .cart-checkout-btn:hover{background:var(--indigo);}
+
+  /* ===== Checkout ===== */
+  .checkout-card{max-width:480px;width:96%;max-height:88vh;overflow-y:auto;padding:30px;}
+  .checkout-summary{font-size:13px;color:#6b6d85;margin-bottom:18px;}
+  .payment-options{display:flex;flex-direction:column;gap:8px;}
+  .payment-option{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:11px 14px;border:1.5px solid var(--line);border-radius:9px;
+    cursor:pointer;transition:all .15s;font-size:13.5px;font-weight:600;
+  }
+  .payment-option.selected{border-color:var(--indigo);background:#EFEBFB;color:var(--indigo);}
+  .payment-option.pmt-disabled{opacity:.55;cursor:not-allowed;}
+  .payment-tag{
+    font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:100px;
+    background:var(--green);color:var(--white);
+  }
+  .payment-tag.pmt-soon{background:var(--line);color:#6b6d85;}
+  .checkout-total-row{
+    display:flex;align-items:center;justify-content:space-between;
+    margin:18px 0 6px;padding-top:16px;border-top:2px solid var(--line);
+    font-weight:800;color:var(--navy);font-size:17px;
+  }
+  .checkout-confirm{text-align:center;padding:10px 4px;}
+  .confirm-icon{
+    width:60px;height:60px;border-radius:50%;background:#DAF3E6;color:var(--green);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 18px;
+  }
+  .confirm-icon svg{width:30px;height:30px;}
+  .checkout-confirm h2{font-size:19px;font-weight:700;color:var(--navy);margin-bottom:10px;}
+  .checkout-confirm p{font-size:13.5px;color:#4a4b5c;line-height:1.6;margin-bottom:22px;}
 
   @media(max-width:760px){
     .pdp-grid{grid-template-columns:1fr;}
@@ -797,6 +828,62 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- Checkout overlay -->
+  <div class="modal-overlay" id="checkoutOverlay" onclick="if(event.target===this) closeModal('checkoutOverlay')">
+    <div class="modal-card checkout-card">
+      <button class="modal-close" onclick="closeModal('checkoutOverlay')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+
+      <div id="checkoutFormPhase">
+        <div class="modal-head">
+          <h2>Checkout</h2>
+          <p class="checkout-summary" id="checkoutSummary"></p>
+        </div>
+        <form onsubmit="submitCheckout(event)">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="coName" required>
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" id="coPhone" required>
+          </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="coEmail" required>
+          </div>
+          <div class="form-group">
+            <label>Delivery Location (City / Pincode)</label>
+            <input type="text" id="coLocation" required>
+          </div>
+          <div class="form-group">
+            <label>Landmark & Full Address</label>
+            <textarea id="coAddress" rows="2" required></textarea>
+          </div>
+          <div class="form-group">
+            <label>Payment Method</label>
+            <div class="payment-options" id="paymentOptions"></div>
+          </div>
+          <div class="checkout-total-row">
+            <span>Order Total</span>
+            <span id="checkoutTotal">₹0</span>
+          </div>
+          <button type="submit" class="form-submit">Continue</button>
+        </form>
+      </div>
+
+      <div class="checkout-confirm" id="checkoutConfirmPhase" style="display:none;">
+        <div class="confirm-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+        </div>
+        <h2>Thank you for your order!</h2>
+        <p>Order <b id="confirmOrderId"></b> has been placed and will be shipped soon. We'll send updates to your email and phone number.</p>
+        <button class="form-submit" onclick="closeCheckout()">Done</button>
+      </div>
+    </div>
+  </div>
+
 <script>
   // ---- Category data (10 categories) ----
   const categories = [
@@ -941,6 +1028,31 @@
     )
   };
 
+  // ---- Pull in any products the admin has added, and fold them into the live catalog ----
+  function loadAdminProducts(){
+    return JSON.parse(localStorage.getItem('shopiffyAdminProducts') || '[]');
+  }
+
+  function mergeAdminProducts(){
+    const adminProducts = loadAdminProducts();
+    adminProducts.forEach(ap => {
+      const priceNum = Number(ap.price) || 0;
+      const oldNum = Number(ap.oldPrice) || 0;
+      const item = {
+        name: ap.name,
+        price: '₹' + priceNum.toLocaleString('en-IN'),
+        old: oldNum ? '₹' + oldNum.toLocaleString('en-IN') : '',
+        img: ap.img || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80',
+        rating: ap.rating || 5,
+        desc: ap.desc || ''
+      };
+      if(ap.category === "Fashion — Men") categoryData.Fashion.male.push(item);
+      else if(ap.category === "Fashion — Women") categoryData.Fashion.female.push(item);
+      else if(categoryData[ap.category]) categoryData[ap.category].push(item);
+    });
+  }
+  mergeAdminProducts();
+
   // ---- Flat search index across every category (used by the live search dropdown) ----
   const searchIndex = [];
   searchIndex.push(...categoryData.Fashion.male.map(p => ({ ...p, category:"Fashion" })));
@@ -949,6 +1061,9 @@
     if(key === "Fashion") return;
     searchIndex.push(...categoryData[key].map(p => ({ ...p, category:key })));
   });
+
+  // Let the admin dashboard know exactly how many products are truly live on the storefront
+  localStorage.setItem('shopiffyBaseCatalogCount', String(searchIndex.length - loadAdminProducts().length));
 
   function buildProductCard(p, category){
     const card = document.createElement('div');
@@ -1020,6 +1135,7 @@
       closeModal('signInModal');
       closeModal('pdpOverlay');
       closeModal('cartOverlay');
+      closeModal('checkoutOverlay');
       closeSuggestions();
     }
   });
@@ -1046,6 +1162,11 @@
     };
     signUpRecords.push(record);
 
+    // Persist to shared storage so the Admin Panel's Customers tab reflects real sign-ups
+    const allSignUps = JSON.parse(localStorage.getItem('shopiffySignUps') || '[]');
+    allSignUps.push(record);
+    localStorage.setItem('shopiffySignUps', JSON.stringify(allSignUps));
+
     // Build and download an Excel sheet of all sign-ups captured this session
     const worksheet = XLSX.utils.json_to_sheet(signUpRecords);
     worksheet['!cols'] = [{wch:20},{wch:26},{wch:16},{wch:22},{wch:32},{wch:20}];
@@ -1071,7 +1192,19 @@
   const cartItems = {}; // productName -> {name, price, img, qty}
   const commentsStore = {}; // productName -> [{author, text}]
 
+  // ---- Checkout state ----
+  let checkoutItems = [];
+  let checkoutClearsWholeCart = false;
+  let checkoutSingleCartItemName = null;
+  let selectedPayment = "Cash on Delivery";
+
   const starSVG = '<svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.6 7-6.2-3.9L6 21.2l1.6-7L2.2 9.5l7.1-.6z"/></svg>';
+  const starEmptySVG = '<svg class="empty" viewBox="0 0 24 24"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.6 7-6.2-3.9L6 21.2l1.6-7L2.2 9.5l7.1-.6z"/></svg>';
+  function starsHTML(rating){
+    let out = '';
+    for(let i=1;i<=5;i++) out += i <= rating ? starSVG : starEmptySVG;
+    return out;
+  }
 
   const specsByCategory = {
     "Fashion": ["Premium quality fabric","Machine washable","Available in multiple sizes","1 Year color-fastness guarantee"],
@@ -1103,7 +1236,7 @@
     document.getElementById('pdpPrice').textContent = p.price;
     document.getElementById('pdpOld').textContent = p.old || "";
     document.getElementById('pdpBrand').innerHTML = `Sold by <b>${brandByCategory[category] || "Shopiffy Assured"}</b> &middot; Category: ${category}`;
-    document.getElementById('pdpStars').innerHTML = starSVG.repeat(5);
+    document.getElementById('pdpStars').innerHTML = starsHTML(p.rating || 5);
 
     const ratingsCount = 800 + ((p.name.length * 37) % 4200);
     document.getElementById('pdpReviews').textContent =
@@ -1198,10 +1331,10 @@
     showToast(`${currentProduct.name} added to your cart!`);
   }
 
-  // Buy option is intentionally left undecided — it never modifies the cart.
+  // Buy Now launches full checkout: delivery details -> payment (COD only for now) -> confirmation.
   function buyNow(){
     if(!currentProduct) return;
-    showToast(`The Buy option for ${currentProduct.name} hasn't been decided yet — stay tuned!`);
+    startCheckout([{ name: currentProduct.name, price: parsePrice(currentProduct.price), qty: 1 }]);
   }
 
   function openCart(){
@@ -1267,16 +1400,114 @@
     renderCart();
   }
 
-  // Buy is undecided everywhere — including from inside the cart.
+  // Buy from the cart — either a single item, or "all" for the whole cart via Proceed to Buy.
   function buyFromCart(name){
-    const msg = name === 'all'
-      ? "The Buy option hasn't been decided yet — stay tuned!"
-      : `The Buy option for ${name} hasn't been decided yet — stay tuned!`;
-    showToast(msg);
+    if(name === 'all'){
+      const items = Object.values(cartItems);
+      if(items.length === 0){ showToast("Your cart is empty."); return; }
+      startCheckout(items, { clearsWholeCart:true });
+    } else {
+      const item = cartItems[name];
+      if(!item) return;
+      startCheckout([item], { cartItemName:name });
+    }
+  }
+
+  // ---- Checkout flow: delivery details -> payment (COD mandatory for now) -> confirmation ----
+  function startCheckout(items, opts){
+    checkoutItems = items;
+    checkoutClearsWholeCart = !!(opts && opts.clearsWholeCart);
+    checkoutSingleCartItemName = (opts && opts.cartItemName) || null;
+
+    const total = items.reduce((s,i) => s + i.price * i.qty, 0);
+    document.getElementById('checkoutSummary').textContent =
+      items.map(i => `${i.name} × ${i.qty}`).join(', ');
+    document.getElementById('checkoutTotal').textContent = '₹' + total.toLocaleString('en-IN');
+
+    document.querySelector('#checkoutFormPhase form').reset();
+    buildPaymentOptions();
+
+    document.getElementById('checkoutFormPhase').style.display = 'block';
+    document.getElementById('checkoutConfirmPhase').style.display = 'none';
+    openModal('checkoutOverlay');
+  }
+
+  function buildPaymentOptions(){
+    selectedPayment = "Cash on Delivery";
+    const methods = [
+      { name:"Cash on Delivery", enabled:true },
+      { name:"Google Pay", enabled:false },
+      { name:"PhonePe", enabled:false },
+      { name:"Credit Card", enabled:false },
+      { name:"Debit Card", enabled:false }
+    ];
+    const wrap = document.getElementById('paymentOptions');
+    wrap.innerHTML = methods.map(m => `
+      <div class="payment-option ${m.enabled ? 'selected' : 'pmt-disabled'}"
+           onclick="${m.enabled ? `selectPayment('${m.name}', this)` : `showToast('${m.name} isn\\'t available yet — please use Cash on Delivery.')`}">
+        <span>${m.name}</span>
+        <span class="payment-tag ${m.enabled ? '' : 'pmt-soon'}">${m.enabled ? 'Mandatory for now' : 'Coming soon'}</span>
+      </div>`).join('');
+  }
+
+  function selectPayment(name, el){
+    selectedPayment = name;
+    document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function submitCheckout(event){
+    event.preventDefault();
+
+    const name = document.getElementById('coName').value.trim();
+    const phone = document.getElementById('coPhone').value.trim();
+    const email = document.getElementById('coEmail').value.trim();
+    const location = document.getElementById('coLocation').value.trim();
+    const address = document.getElementById('coAddress').value.trim();
+
+    const total = checkoutItems.reduce((s,i) => s + i.price * i.qty, 0);
+    const qty = checkoutItems.reduce((s,i) => s + i.qty, 0);
+    const orderId = 'SHP-' + Date.now().toString().slice(-8);
+
+    const order = {
+      id: orderId,
+      customer: name,
+      email, phone, location, address,
+      items: checkoutItems.map(i => i.name).join(', '),
+      qty, total,
+      date: new Date().toISOString().slice(0,10),
+      status: "Pending",
+      paymentMethod: selectedPayment
+    };
+
+    // Save the real order to shared storage so the Admin Panel picks it up
+    const orders = JSON.parse(localStorage.getItem('shopiffyOrders') || '[]');
+    orders.push(order);
+    localStorage.setItem('shopiffyOrders', JSON.stringify(orders));
+
+    // Clean up the cart depending on where checkout was launched from
+    if(checkoutClearsWholeCart){
+      Object.keys(cartItems).forEach(k => delete cartItems[k]);
+      updateCartBadge();
+    } else if(checkoutSingleCartItemName){
+      delete cartItems[checkoutSingleCartItemName];
+      updateCartBadge();
+    }
+
+    document.getElementById('confirmOrderId').textContent = orderId;
+    document.getElementById('checkoutFormPhase').style.display = 'none';
+    document.getElementById('checkoutConfirmPhase').style.display = 'block';
+  }
+
+  function closeCheckout(){
+    closeModal('checkoutOverlay');
+    closeModal('pdpOverlay');
+    closeModal('cartOverlay');
   }
 
   // ---- Live search suggestions (matches anywhere in the name, e.g. "d" or "den" -> Denim Jeans) ----
   let currentSuggestions = [];
+
 
   function handleSearchInput(event){
     const q = event.target.value.trim().toLowerCase();
@@ -1341,6 +1572,13 @@
 
   document.addEventListener('click', (e)=>{
     if(!e.target.closest('.search-wrap')) closeSuggestions();
+  });
+
+  // ---- Live sync with the Admin Panel ----
+  // If the admin adds/edits/deletes a product in another tab, refresh so the
+  // storefront's catalog and search index reflect it right away.
+  window.addEventListener('storage', (e)=>{
+    if(e.key === 'shopiffyAdminProducts') location.reload();
   });
 </script>
 </body>

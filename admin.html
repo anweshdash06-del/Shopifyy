@@ -311,15 +311,11 @@
         <!-- ===== Orders ===== -->
         <section class="tab-panel" id="tab-orders">
           <h1>Orders</h1>
-          <div class="subtitle">See who placed what, and update order status as it moves.</div>
-
-          <div class="note-box" id="ordersNote">
-            Showing sample orders for now — this table will fill automatically with real orders once checkout goes live on the storefront.
-          </div>
+          <div class="subtitle">Real orders placed on Shopiffy — who ordered what, their delivery details, and current status.</div>
 
           <div class="panel-card">
             <table>
-              <thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Qty</th><th>Total</th><th>Date</th><th>Status</th></tr></thead>
+              <thead><tr><th>Order ID</th><th>Customer</th><th>Contact</th><th>Delivery To</th><th>Items</th><th>Qty</th><th>Total</th><th>Payment</th><th>Date</th><th>Status</th></tr></thead>
               <tbody id="ordersBody"></tbody>
             </table>
           </div>
@@ -475,19 +471,7 @@
   // STORAGE HELPERS
   // ============================================================
   function loadOrders(){
-    let orders = JSON.parse(localStorage.getItem('shopiffyOrders') || 'null');
-    if(!orders){
-      // seed sample data so the dashboard isn't empty on first run
-      orders = [
-        { id:"SHP-1001", customer:"Ananya Roy", items:"Cotton Casual Shirt, Navy", qty:1, total:699, date:"2026-07-28", status:"Delivered" },
-        { id:"SHP-1002", customer:"Rahul Mehta", items:"Pulse X5 5G, 128GB", qty:1, total:11999, date:"2026-07-30", status:"Shipped" },
-        { id:"SHP-1003", customer:"Sneha Patil", items:"Floral Wrap Dress", qty:2, total:1798, date:"2026-07-31", status:"Pending" },
-        { id:"SHP-1004", customer:"Vikram Nair", items:"UltraBook Pro 14 Laptop", qty:1, total:42990, date:"2026-08-01", status:"Pending" },
-        { id:"SHP-1005", customer:"Priya Das", items:"Matte Lipstick Set", qty:3, total:1647, date:"2026-08-01", status:"Cancelled" }
-      ];
-      localStorage.setItem('shopiffyOrders', JSON.stringify(orders));
-    }
-    return orders;
+    return JSON.parse(localStorage.getItem('shopiffyOrders') || '[]');
   }
   function saveOrders(orders){ localStorage.setItem('shopiffyOrders', JSON.stringify(orders)); }
 
@@ -543,16 +527,19 @@
       <tr>
         <td>${o.id}</td>
         <td>${o.customer}</td>
+        <td>${o.phone || '—'}<br><span style="color:#9698ab;font-size:11.5px;">${o.email || ''}</span></td>
+        <td>${o.location || '—'}<br><span style="color:#9698ab;font-size:11.5px;">${o.address || ''}</span></td>
         <td>${o.items}</td>
         <td>${o.qty}</td>
         <td>₹${o.total.toLocaleString('en-IN')}</td>
+        <td>${o.paymentMethod || 'Cash on Delivery'}</td>
         <td>${o.date}</td>
         <td>
           <select class="status-select" onchange="updateOrderStatus(${i}, this.value)">
             ${["Pending","Shipped","Delivered","Cancelled"].map(s => `<option ${s===o.status?'selected':''}>${s}</option>`).join('')}
           </select>
         </td>
-      </tr>`).join('') : `<tr><td colspan="7" class="empty-row">No orders yet</td></tr>`;
+      </tr>`).join('') : `<tr><td colspan="10" class="empty-row">No orders yet — real orders placed on Shopiffy will appear here automatically.</td></tr>`;
   }
 
   function updateOrderStatus(index, newStatus){
@@ -732,6 +719,20 @@
     clearTimeout(window._toastTimer);
     window._toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
   }
+
+  // ============================================================
+  // LIVE SYNC WITH THE STOREFRONT
+  // ============================================================
+  // If a real order is placed or a customer signs up on the storefront in
+  // another tab, refresh this dashboard automatically — no manual reload needed.
+  window.addEventListener('storage', (e)=>{
+    if(document.getElementById('app').style.display === 'none') return; // not logged in yet
+    if(e.key === 'shopiffyOrders' || e.key === 'shopiffySignUps'){
+      renderStats();
+      renderOrders();
+      renderCustomers();
+    }
+  });
 </script>
 </body>
 </html>

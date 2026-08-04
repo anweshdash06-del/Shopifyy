@@ -502,46 +502,70 @@
   }
 
   // ============================================================
-  // STORAGE HELPERS
+  // API HELPERS (connects to the live MongoDB-backed server)
   // ============================================================
-  function loadOrders(){
-    return JSON.parse(localStorage.getItem('shopiffyOrders') || '[]');
-  }
-  function saveOrders(orders){ localStorage.setItem('shopiffyOrders', JSON.stringify(orders)); }
+  const API_BASE = 'https://shopiffy-6gbe.onrender.com';
 
-  function loadCustomers(){
-    return JSON.parse(localStorage.getItem('shopiffySignUps') || '[]');
-  }
-
-  function loadProducts(){
-    return JSON.parse(localStorage.getItem('shopiffyAdminProducts') || '[]');
-  }
-  function saveProducts(products){ localStorage.setItem('shopiffyAdminProducts', JSON.stringify(products)); }
-
-  function loadSellers(){
-    return JSON.parse(localStorage.getItem('shopiffySellRequests') || '[]');
+  async function apiGet(path){
+    try {
+      const res = await fetch(`${API_BASE}${path}`);
+      return await res.json();
+    } catch(err){ return []; }
   }
 
-  function loadHelpMessages(){
-    return JSON.parse(localStorage.getItem('shopiffyHelpMessages') || '[]');
+  async function loadOrders(){ return await apiGet('/api/orders'); }
+  async function updateOrderStatusAPI(orderId, status){
+    try {
+      await fetch(`${API_BASE}/api/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+    } catch(err){}
   }
+
+  async function loadCustomers(){ return await apiGet('/api/signups'); }
+
+  async function loadProducts(){ return await apiGet('/api/products'); }
+  async function createProductAPI(product){
+    const res = await fetch(`${API_BASE}/api/products`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(product)
+    });
+    return await res.json();
+  }
+  async function updateProductAPI(id, product){
+    const res = await fetch(`${API_BASE}/api/products/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(product)
+    });
+    return await res.json();
+  }
+  async function deleteProductAPI(id){
+    await fetch(`${API_BASE}/api/products/${id}`, { method: 'DELETE' });
+  }
+
+  async function loadSellers(){ return await apiGet('/api/sell-requests'); }
+  async function loadHelpMessages(){ return await apiGet('/api/help-messages'); }
 
   // ============================================================
   // DASHBOARD
   // ============================================================
-  function initDashboard(){
-    renderStats();
-    renderOrders();
-    renderCustomers();
-    renderProducts();
-    renderSellers();
-    renderHelpMessages();
+  async function initDashboard(){
+    await renderStats();
+    await renderOrders();
+    await renderCustomers();
+    await renderProducts();
+    await renderSellers();
+    await renderHelpMessages();
   }
 
-  function renderStats(){
-    const orders = loadOrders();
-    const customers = loadCustomers();
-    const products = loadProducts();
+  async function renderStats(){
+    const orders = await loadOrders();
+    const customers = await loadCustomers();
+    const products = await loadProducts();
     const revenue = orders.reduce((sum,o) => sum + (o.status !== 'Cancelled' ? o.total : 0), 0);
 
     document.getElementById('statOrders').textContent = orders.length;
@@ -564,8 +588,8 @@
   // ============================================================
   // ORDERS TAB
   // ============================================================
-  function renderOrders(){
-    const orders = loadOrders();
+  async function renderOrders(){
+    const orders = await loadOrders();
     const body = document.getElementById('ordersBody');
     body.innerHTML = orders.length ? orders.map((o,i) => `
       <tr>
@@ -579,27 +603,25 @@
         <td>${o.paymentMethod || 'Cash on Delivery'}</td>
         <td>${o.date}</td>
         <td>
-          <select class="status-select" onchange="updateOrderStatus(${i}, this.value)">
+          <select class="status-select" onchange="updateOrderStatus('${o.id}', this.value)">
             ${["Pending","Shipped","Delivered","Cancelled"].map(s => `<option ${s===o.status?'selected':''}>${s}</option>`).join('')}
           </select>
         </td>
       </tr>`).join('') : `<tr><td colspan="10" class="empty-row">No orders yet — real orders placed on Shopiffy will appear here automatically.</td></tr>`;
   }
 
-  function updateOrderStatus(index, newStatus){
-    const orders = loadOrders();
-    orders[index].status = newStatus;
-    saveOrders(orders);
-    renderOrders();
-    renderStats();
-    showToast(`Order ${orders[index].id} marked as ${newStatus}`);
+  async function updateOrderStatus(orderId, newStatus){
+    await updateOrderStatusAPI(orderId, newStatus);
+    await renderOrders();
+    await renderStats();
+    showToast(`Order ${orderId} marked as ${newStatus}`);
   }
 
   // ============================================================
   // CUSTOMERS TAB
   // ============================================================
-  function renderCustomers(){
-    const customers = loadCustomers();
+  async function renderCustomers(){
+    const customers = await loadCustomers();
     const body = document.getElementById('customersBody');
     body.innerHTML = customers.length ? customers.map(c => `
       <tr>
@@ -614,8 +636,8 @@
   // ============================================================
   // SELL REQUESTS TAB
   // ============================================================
-  function renderSellers(){
-    const sellers = loadSellers();
+  async function renderSellers(){
+    const sellers = await loadSellers();
     const body = document.getElementById('sellersBody');
     body.innerHTML = sellers.length ? sellers.map(s => `
       <tr>
@@ -625,22 +647,22 @@
         <td>₹${Number(s.price).toLocaleString('en-IN')}</td>
         <td>${s.phone || '—'}<br><span style="color:#9698ab;font-size:11.5px;">${s.email || ''}</span></td>
         <td>${s.address || '—'}</td>
-        <td>${s.date || '—'}</td>
+        <td>${s.date || (s.createdAt ? new Date(s.createdAt).toLocaleString() : '—')}</td>
       </tr>`).join('') : `<tr><td colspan="7" class="empty-row">No sell requests yet — these will appear here when someone submits the "Sell on Shopiffy" form.</td></tr>`;
   }
 
   // ============================================================
   // HELP CENTER TAB
   // ============================================================
-  function renderHelpMessages(){
-    const messages = loadHelpMessages();
+  async function renderHelpMessages(){
+    const messages = await loadHelpMessages();
     const body = document.getElementById('helpMessagesBody');
     body.innerHTML = messages.length ? messages.map(m => `
       <tr>
         <td>${m.name}</td>
         <td>${m.email}</td>
         <td>${m.message}</td>
-        <td>${m.date || '—'}</td>
+        <td>${m.date || (m.createdAt ? new Date(m.createdAt).toLocaleString() : '—')}</td>
       </tr>`).join('') : `<tr><td colspan="4" class="empty-row">No help messages yet — these will appear here when a customer posts a message from the storefront's Help Center.</td></tr>`;
   }
 
@@ -648,9 +670,11 @@
   // PRODUCTS TAB
   // ============================================================
   let currentRating = 5;
+  let currentProductsList = []; // cached so edit/delete can reference by Mongo _id
 
-  function renderProducts(){
-    const products = loadProducts();
+  async function renderProducts(){
+    const products = await loadProducts();
+    currentProductsList = products;
     const body = document.getElementById('productsBody');
     body.innerHTML = products.length ? products.map((p,i) => `
       <tr>
@@ -701,7 +725,7 @@
     imageDataUrl = "";
 
     if(editIndex !== undefined){
-      const p = loadProducts()[editIndex];
+      const p = currentProductsList[editIndex];
       document.getElementById('productName').value = p.name;
       document.getElementById('productCategory').value = p.category;
       document.getElementById('productPrice').value = p.price;
@@ -732,15 +756,13 @@
 
   function editProduct(index){ openProductForm(index); }
 
-  function deleteProduct(index){
-    const products = loadProducts();
-    const name = products[index].name;
-    if(!confirm(`Delete "${name}"? This can't be undone.`)) return;
-    products.splice(index, 1);
-    saveProducts(products);
-    renderProducts();
-    renderStats();
-    showToast(`${name} deleted`);
+  async function deleteProduct(index){
+    const product = currentProductsList[index];
+    if(!confirm(`Delete "${product.name}"? This can't be undone.`)) return;
+    await deleteProductAPI(product._id);
+    await renderProducts();
+    await renderStats();
+    showToast(`${product.name} deleted`);
   }
 
   let imageDataUrl = "";
@@ -757,10 +779,9 @@
     reader.readAsDataURL(file);
   }
 
-  function saveProduct(event){
+  async function saveProduct(event){
     event.preventDefault();
     const idField = document.getElementById('productId').value;
-    const products = loadProducts();
 
     const product = {
       name: document.getElementById('productName').value.trim(),
@@ -773,16 +794,16 @@
     };
 
     if(idField !== ""){
-      products[parseInt(idField)] = product;
+      const existing = currentProductsList[parseInt(idField)];
+      await updateProductAPI(existing._id, product);
       showToast(`${product.name} updated`);
     } else {
-      products.push(product);
+      await createProductAPI(product);
       showToast(`${product.name} added to catalog`);
     }
 
-    saveProducts(products);
-    renderProducts();
-    renderStats();
+    await renderProducts();
+    await renderStats();
     closeProductForm();
   }
 
@@ -798,20 +819,14 @@
   }
 
   // ============================================================
-  // LIVE SYNC WITH THE STOREFRONT
+  // LIVE SYNC WITH THE DATABASE
   // ============================================================
-  // If a real order is placed or a customer signs up on the storefront in
-  // another tab, refresh this dashboard automatically — no manual reload needed.
-  window.addEventListener('storage', (e)=>{
+  // Poll the API periodically so new orders/sign-ups/messages from the
+  // storefront show up here without needing a manual page refresh.
+  setInterval(() => {
     if(document.getElementById('app').style.display === 'none') return; // not logged in yet
-    if(e.key === 'shopiffyOrders' || e.key === 'shopiffySignUps'){
-      renderStats();
-      renderOrders();
-      renderCustomers();
-    }
-    if(e.key === 'shopiffySellRequests') renderSellers();
-    if(e.key === 'shopiffyHelpMessages') renderHelpMessages();
-  });
+    initDashboard();
+  }, 15000);
 </script>
 </body>
 </html>

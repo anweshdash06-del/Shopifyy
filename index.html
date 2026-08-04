@@ -1245,12 +1245,16 @@
   };
 
   // ---- Pull in any products the admin has added, and fold them into the live catalog ----
-  function loadAdminProducts(){
-    return JSON.parse(localStorage.getItem('shopiffyAdminProducts') || '[]');
+  const API_BASE = 'https://shopiffy-6gbe.onrender.com';
+
+  async function loadAdminProducts(){
+    try {
+      const res = await fetch(API_BASE + '/api/products');
+      return await res.json();
+    } catch(e){ return []; }
   }
 
-  function mergeAdminProducts(){
-    const adminProducts = loadAdminProducts();
+  function mergeAdminProducts(adminProducts){
     adminProducts.forEach(ap => {
       const priceNum = Number(ap.price) || 0;
       const oldNum = Number(ap.oldPrice) || 0;
@@ -1268,19 +1272,6 @@
       else if(categoryData[ap.category]) categoryData[ap.category].push(item);
     });
   }
-  mergeAdminProducts();
-
-  // ---- Flat search index across every category (used by the live search dropdown) ----
-  const searchIndex = [];
-  searchIndex.push(...categoryData.Fashion.male.map(p => ({ ...p, category:"Fashion" })));
-  searchIndex.push(...categoryData.Fashion.female.map(p => ({ ...p, category:"Fashion" })));
-  Object.keys(categoryData).forEach(key=>{
-    if(key === "Fashion") return;
-    searchIndex.push(...categoryData[key].map(p => ({ ...p, category:key })));
-  });
-
-  // Let the admin dashboard know exactly how many products are truly live on the storefront
-  localStorage.setItem('shopiffyBaseCatalogCount', String(searchIndex.length - loadAdminProducts().length));
 
   function buildProductCard(p, category){
     const card = document.createElement('div');
@@ -1321,8 +1312,26 @@
     tab.onclick = ()=> renderShowcase("Fashion", tab.dataset.gender);
   });
 
-  // Initial render on page load
-  renderShowcase("Fashion", "male");
+  // ---- Search index (built after admin products load) ----
+  let searchIndex = [];
+  function buildSearchIndex(){
+    searchIndex = [];
+    searchIndex.push(...categoryData.Fashion.male.map(p => ({ ...p, category:"Fashion" })));
+    searchIndex.push(...categoryData.Fashion.female.map(p => ({ ...p, category:"Fashion" })));
+    Object.keys(categoryData).forEach(key=>{
+      if(key === "Fashion") return;
+      searchIndex.push(...categoryData[key].map(p => ({ ...p, category:key })));
+    });
+  }
+
+  // Load real admin products from the live database, merge them in, then render everything
+  async function initCatalog(){
+    const adminProducts = await loadAdminProducts();
+    mergeAdminProducts(adminProducts);
+    buildSearchIndex();
+    renderShowcase("Fashion", "male");
+  }
+  initCatalog();
 
   // ---- Product rail data ----
   const products = [
@@ -1423,16 +1432,9 @@
     openCheckoutModal(pc.items, pc.opts);
   }
 
-  function handleSignUp(event){
+  async function handleSignUp(event){
     event.preventDefault();
     const email = document.getElementById('suEmail').value.trim();
-
-    // One account per email
-    const existing = JSON.parse(localStorage.getItem('shopiffySignUps') || '[]');
-    if(existing.some(r => (r.Email || '').toLowerCase() === email.toLowerCase())){
-      showToast("An account with this email already exists — try signing in instead.");
-      return;
-    }
 
     const record = {
       "Name": document.getElementById('suName').value.trim(),
@@ -1443,11 +1445,29 @@
       "Password": document.getElementById('suPassword').value,
       "Signed Up At": new Date().toLocaleString()
     };
-    signUpRecords.push(record);
 
-    // Persist to shared storage so the Admin Panel's Customers tab reflects real sign-ups
-    existing.push(record);
-    localStorage.setItem('shopiffySignUps', JSON.stringify(existing));
+    try {
+      const checkRes = await fetch(`${API_BASE}/api/signups`);
+      const existing = await checkRes.json();
+      if(existing.some(r => (r.Email || '').toLowerCase() === email.toLowerCase())){
+        showToast("An account with this email already exists — try signing in instead.");
+        return;
+      }
+      const res = await fetch(`${API_BASE}/api/signups`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(record)
+      });
+      if(!res.ok){
+        showToast("Something went wrong creating your account. Please try again.");
+        return;
+      }
+    } catch(err){
+      showToast("Couldn't reach the server. Please try again.");
+      return;
+    }
+
+    signUpRecords.push(record);
 
     // Build and download an Excel sheet of all sign-ups captured this session
     // (password intentionally excluded from the exported file)
@@ -1468,13 +1488,21 @@
     resumePendingCheckout();
   }
 
-  function handleSignIn(event){
+  async function handleSignIn(event){
     event.preventDefault();
     const email = document.getElementById('siEmail').value.trim();
     const password = document.getElementById('siPassword').value;
     const errorBox = document.getElementById('signInError');
 
-    const allSignUps = JSON.parse(localStorage.getItem('shopiffySignUps') || '[]');
+    let allSignUps = [];
+    try {
+      const res = await fetch(`${API_BASE}/api/signups`);
+      allSignUps = await res.json();
+    } catch(err){
+      showToast("Couldn't reach the server. Please try again.");
+      return;
+    }
+
     const match = allSignUps.find(r =>
       (r.Email || '').toLowerCase() === email.toLowerCase() && r.Password === password
     );
@@ -1737,7 +1765,7 @@
     openCheckoutModal(items, opts);
   }
 
-  function openCheckoutModal(items, opts){
+  async function openCheckoutModal(items, opts){
     checkoutItems = items;
     checkoutClearsWholeCart = !!(opts && opts.clearsWholeCart);
     checkoutSingleCartItemName = (opts && opts.cartItemName) || null;
@@ -1753,15 +1781,18 @@
     // Prefill delivery details for the logged-in user so they don't retype everything
     const user = getCurrentUser();
     if(user){
-      const allSignUps = JSON.parse(localStorage.getItem('shopiffySignUps') || '[]');
-      const fullRecord = allSignUps.find(r => (r.Email||'').toLowerCase() === user.email.toLowerCase());
-      if(fullRecord){
-        document.getElementById('coName').value = fullRecord.Name || '';
-        document.getElementById('coPhone').value = fullRecord.Phone || '';
-        document.getElementById('coEmail').value = fullRecord.Email || '';
-        document.getElementById('coLocation').value = fullRecord.Location || '';
-        document.getElementById('coAddress').value = fullRecord.Address || '';
-      }
+      try {
+        const res = await fetch(`${API_BASE}/api/signups`);
+        const allSignUps = await res.json();
+        const fullRecord = allSignUps.find(r => (r.Email||'').toLowerCase() === user.email.toLowerCase());
+        if(fullRecord){
+          document.getElementById('coName').value = fullRecord.Name || '';
+          document.getElementById('coPhone').value = fullRecord.Phone || '';
+          document.getElementById('coEmail').value = fullRecord.Email || '';
+          document.getElementById('coLocation').value = fullRecord.Location || '';
+          document.getElementById('coAddress').value = fullRecord.Address || '';
+        }
+      } catch(err){ /* prefill is best-effort; ignore failures */ }
     }
 
     document.getElementById('checkoutFormPhase').style.display = 'block';
@@ -1793,7 +1824,7 @@
     el.classList.add('selected');
   }
 
-  function submitCheckout(event){
+  async function submitCheckout(event){
     event.preventDefault();
 
     const name = document.getElementById('coName').value.trim();
@@ -1817,10 +1848,21 @@
       paymentMethod: selectedPayment
     };
 
-    // Save the real order to shared storage so the Admin Panel picks it up
-    const orders = JSON.parse(localStorage.getItem('shopiffyOrders') || '[]');
-    orders.push(order);
-    localStorage.setItem('shopiffyOrders', JSON.stringify(orders));
+    // Save the real order to the database so the Admin Panel picks it up
+    try {
+      const res = await fetch(`${API_BASE}/api/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(order)
+      });
+      if(!res.ok){
+        showToast("Couldn't place your order. Please try again.");
+        return;
+      }
+    } catch(err){
+      showToast("Couldn't reach the server. Please try again.");
+      return;
+    }
 
     // Clean up the cart depending on where checkout was launched from
     if(checkoutClearsWholeCart){
@@ -1853,15 +1895,16 @@
     openModal('trackOverlay');
   }
 
-  function lookupOrder(){
-    const q = document.getElementById('trackOrderInput').value.trim().toLowerCase();
+  async function lookupOrder(){
+    const q = document.getElementById('trackOrderInput').value.trim();
     const resultBox = document.getElementById('trackResult');
     if(!q) return;
 
-    const orders = JSON.parse(localStorage.getItem('shopiffyOrders') || '[]');
-    const order = orders.find(o =>
-      o.id.toLowerCase() === q || (o.email && o.email.toLowerCase() === q)
-    );
+    let order = null;
+    try {
+      const res = await fetch(`${API_BASE}/api/orders/lookup?query=${encodeURIComponent(q)}`);
+      if(res.ok) order = await res.json();
+    } catch(err){ /* fall through to not-found */ }
 
     if(!order){
       resultBox.innerHTML = '<div class="track-not-found">No order found for that Order ID or email. Double-check and try again.</div>';
@@ -1915,17 +1958,23 @@
     showToast("Connecting your call...");
   }
 
-  function submitHelpMessage(event){
+  async function submitHelpMessage(event){
     event.preventDefault();
     const record = {
       name: document.getElementById('helpName').value.trim(),
       email: document.getElementById('helpEmail').value.trim(),
-      message: document.getElementById('helpMessage').value.trim(),
-      date: new Date().toLocaleString()
+      message: document.getElementById('helpMessage').value.trim()
     };
-    const all = JSON.parse(localStorage.getItem('shopiffyHelpMessages') || '[]');
-    all.push(record);
-    localStorage.setItem('shopiffyHelpMessages', JSON.stringify(all));
+    try {
+      await fetch(`${API_BASE}/api/help-messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(record)
+      });
+    } catch(err){
+      showToast("Couldn't reach the server. Please try again.");
+      return;
+    }
 
     document.querySelector('#helpOverlay form').reset();
     closeModal('helpOverlay');
@@ -1958,7 +2007,7 @@
     reader.readAsDataURL(file);
   }
 
-  function submitSellForm(event){
+  async function submitSellForm(event){
     event.preventDefault();
     const record = {
       name: document.getElementById('sellName').value.trim(),
@@ -1967,12 +2016,18 @@
       phone: document.getElementById('sellPhone').value.trim(),
       email: document.getElementById('sellEmail').value.trim(),
       address: document.getElementById('sellAddress').value.trim(),
-      img: sellImageDataUrl,
-      date: new Date().toLocaleString()
+      img: sellImageDataUrl
     };
-    const all = JSON.parse(localStorage.getItem('shopiffySellRequests') || '[]');
-    all.push(record);
-    localStorage.setItem('shopiffySellRequests', JSON.stringify(all));
+    try {
+      await fetch(`${API_BASE}/api/sell-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(record)
+      });
+    } catch(err){
+      showToast("Couldn't reach the server. Please try again.");
+      return;
+    }
 
     closeModal('sellOverlay');
     showToast(`Thanks ${record.name.split(' ')[0]}! We've received your request and will be in touch.`);

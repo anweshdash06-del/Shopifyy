@@ -147,6 +147,7 @@
     background:var(--amber);color:var(--navy);
   }
   .btn-signup:hover{background:#e0972a;}
+  .welcome-text{font-size:13.5px;font-weight:600;color:var(--navy);white-space:nowrap;}
 
   .cart-btn{
     position:relative;display:flex;align-items:center;gap:6px;
@@ -678,8 +679,14 @@
       </form>
 
       <div class="header-actions">
-        <button class="btn btn-signin" onclick="openModal('signInModal')">Sign In</button>
-        <button class="btn btn-signup" onclick="openModal('signUpModal')">Sign Up</button>
+        <div id="guestActions" style="display:flex;align-items:center;gap:10px;">
+          <button class="btn btn-signin" onclick="openSignIn()">Sign In</button>
+          <button class="btn btn-signup" onclick="openSignUp()">Sign Up</button>
+        </div>
+        <div id="loggedInActions" style="display:none;align-items:center;gap:10px;">
+          <span class="welcome-text" id="welcomeText"></span>
+          <button class="btn btn-signin" onclick="logoutUser()">Log Out</button>
+        </div>
         <button class="cart-btn" onclick="openCart()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
           Cart
@@ -828,10 +835,14 @@
           <label for="suAddress">Full Address</label>
           <textarea id="suAddress" rows="3" placeholder="House no., street, landmark" required></textarea>
         </div>
+        <div class="form-group">
+          <label for="suPassword">Create a Password</label>
+          <input type="password" id="suPassword" placeholder="At least 6 characters" minlength="6" required>
+        </div>
         <button type="submit" class="form-submit">Sign Up &amp; Save Details</button>
         <p class="form-note">Your details are saved to this session and included in the downloadable Excel sheet.</p>
       </form>
-      <div class="modal-switch">Already have an account? <button onclick="closeModal('signUpModal'); openModal('signInModal');">Sign In</button></div>
+      <div class="modal-switch">Already have an account? <button onclick="closeModal('signUpModal'); openSignIn();">Sign In</button></div>
     </div>
   </div>
 
@@ -849,6 +860,7 @@
         <p>Sign in with your registered email and password.</p>
       </div>
       <form id="signInForm" onsubmit="handleSignIn(event)">
+        <p class="form-note" id="signInError" style="display:none;color:var(--pink);">Incorrect email or password. Please try again, or sign up if you're new here.</p>
         <div class="form-group">
           <label for="siEmail">Email Address</label>
           <input type="email" id="siEmail" placeholder="you@example.com" required>
@@ -859,7 +871,7 @@
         </div>
         <button type="submit" class="form-submit">Sign In</button>
       </form>
-      <div class="modal-switch">New to Shopiffy? <button onclick="closeModal('signInModal'); openModal('signUpModal');">Create an account</button></div>
+      <div class="modal-switch">New to Shopiffy? <button onclick="closeModal('signInModal'); openSignUp();">Create an account</button></div>
     </div>
   </div>
 
@@ -1360,25 +1372,87 @@
   // In-memory store for this browsing session (no browser storage APIs used)
   const signUpRecords = [];
 
+  // ---- Auth session helpers ----
+  let pendingCheckout = null; // { items, opts } — set when Buy is gated behind login
+
+  function getCurrentUser(){
+    return JSON.parse(localStorage.getItem('shopiffyCurrentUser') || 'null');
+  }
+
+  function setCurrentUser(user){
+    localStorage.setItem('shopiffyCurrentUser', JSON.stringify(user));
+    updateAuthUI();
+  }
+
+  function logoutUser(){
+    localStorage.removeItem('shopiffyCurrentUser');
+    updateAuthUI();
+    showToast("You've been logged out.");
+  }
+
+  function updateAuthUI(){
+    const user = getCurrentUser();
+    const guest = document.getElementById('guestActions');
+    const loggedIn = document.getElementById('loggedInActions');
+    if(user){
+      guest.style.display = 'none';
+      loggedIn.style.display = 'flex';
+      document.getElementById('welcomeText').textContent = `Hi, ${user.name.split(' ')[0]}`;
+    } else {
+      guest.style.display = 'flex';
+      loggedIn.style.display = 'none';
+    }
+  }
+
+  function openSignUp(){
+    document.getElementById('signUpForm').reset();
+    openModal('signUpModal');
+  }
+
+  function openSignIn(){
+    document.getElementById('signInError').style.display = 'none';
+    document.getElementById('signInForm').reset();
+    openModal('signInModal');
+  }
+
+  // If a gated Buy Now/Buy was waiting on login, continue it right after sign-up/sign-in
+  function resumePendingCheckout(){
+    if(!pendingCheckout) return;
+    const pc = pendingCheckout;
+    pendingCheckout = null;
+    openCheckoutModal(pc.items, pc.opts);
+  }
+
   function handleSignUp(event){
     event.preventDefault();
+    const email = document.getElementById('suEmail').value.trim();
+
+    // One account per email
+    const existing = JSON.parse(localStorage.getItem('shopiffySignUps') || '[]');
+    if(existing.some(r => (r.Email || '').toLowerCase() === email.toLowerCase())){
+      showToast("An account with this email already exists — try signing in instead.");
+      return;
+    }
+
     const record = {
       "Name": document.getElementById('suName').value.trim(),
-      "Email": document.getElementById('suEmail').value.trim(),
+      "Email": email,
       "Phone": document.getElementById('suPhone').value.trim(),
       "Location": document.getElementById('suLocation').value.trim(),
       "Address": document.getElementById('suAddress').value.trim(),
+      "Password": document.getElementById('suPassword').value,
       "Signed Up At": new Date().toLocaleString()
     };
     signUpRecords.push(record);
 
     // Persist to shared storage so the Admin Panel's Customers tab reflects real sign-ups
-    const allSignUps = JSON.parse(localStorage.getItem('shopiffySignUps') || '[]');
-    allSignUps.push(record);
-    localStorage.setItem('shopiffySignUps', JSON.stringify(allSignUps));
+    existing.push(record);
+    localStorage.setItem('shopiffySignUps', JSON.stringify(existing));
 
     // Build and download an Excel sheet of all sign-ups captured this session
-    const worksheet = XLSX.utils.json_to_sheet(signUpRecords);
+    // (password intentionally excluded from the exported file)
+    const exportRows = signUpRecords.map(({ Password, ...rest }) => rest);
+    const worksheet = XLSX.utils.json_to_sheet(exportRows);
     worksheet['!cols'] = [{wch:20},{wch:26},{wch:16},{wch:22},{wch:32},{wch:20}];
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sign Ups");
@@ -1386,15 +1460,38 @@
 
     document.getElementById('signUpForm').reset();
     closeModal('signUpModal');
-    showToast(`Welcome, ${record.Name.split(' ')[0]}! Your details were saved and exported to Shopiffy_SignUps.xlsx`);
+
+    // Sign the new user in immediately
+    setCurrentUser({ name: record.Name, email: record.Email });
+    showToast(`Welcome, ${record.Name.split(' ')[0]}! You're signed up and signed in.`);
+
+    resumePendingCheckout();
   }
 
   function handleSignIn(event){
     event.preventDefault();
     const email = document.getElementById('siEmail').value.trim();
+    const password = document.getElementById('siPassword').value;
+    const errorBox = document.getElementById('signInError');
+
+    const allSignUps = JSON.parse(localStorage.getItem('shopiffySignUps') || '[]');
+    const match = allSignUps.find(r =>
+      (r.Email || '').toLowerCase() === email.toLowerCase() && r.Password === password
+    );
+
+    if(!match){
+      errorBox.style.display = 'block';
+      return;
+    }
+    errorBox.style.display = 'none';
+
     document.getElementById('signInForm').reset();
     closeModal('signInModal');
-    showToast(`Signed in as ${email}. Welcome back to Shopiffy!`);
+
+    setCurrentUser({ name: match.Name, email: match.Email });
+    showToast(`Welcome back, ${match.Name.split(' ')[0]}!`);
+
+    resumePendingCheckout();
   }
 
   // ---- Product Detail Page (PDP) ----
@@ -1624,7 +1721,23 @@
   }
 
   // ---- Checkout flow: delivery details -> payment (COD mandatory for now) -> confirmation ----
+  // Every purchase path (Buy Now, cart Buy, Proceed to Buy) funnels through here first.
+  // Logged-in users go straight to checkout; guests are prompted to sign up/sign in,
+  // and their purchase automatically resumes right after.
   function startCheckout(items, opts){
+    const user = getCurrentUser();
+    if(!user){
+      pendingCheckout = { items, opts };
+      closeModal('pdpOverlay');
+      closeModal('cartOverlay');
+      showToast("Please sign in or sign up to continue with your purchase.");
+      openSignUp();
+      return;
+    }
+    openCheckoutModal(items, opts);
+  }
+
+  function openCheckoutModal(items, opts){
     checkoutItems = items;
     checkoutClearsWholeCart = !!(opts && opts.clearsWholeCart);
     checkoutSingleCartItemName = (opts && opts.cartItemName) || null;
@@ -1636,6 +1749,20 @@
 
     document.querySelector('#checkoutFormPhase form').reset();
     buildPaymentOptions();
+
+    // Prefill delivery details for the logged-in user so they don't retype everything
+    const user = getCurrentUser();
+    if(user){
+      const allSignUps = JSON.parse(localStorage.getItem('shopiffySignUps') || '[]');
+      const fullRecord = allSignUps.find(r => (r.Email||'').toLowerCase() === user.email.toLowerCase());
+      if(fullRecord){
+        document.getElementById('coName').value = fullRecord.Name || '';
+        document.getElementById('coPhone').value = fullRecord.Phone || '';
+        document.getElementById('coEmail').value = fullRecord.Email || '';
+        document.getElementById('coLocation').value = fullRecord.Location || '';
+        document.getElementById('coAddress').value = fullRecord.Address || '';
+      }
+    }
 
     document.getElementById('checkoutFormPhase').style.display = 'block';
     document.getElementById('checkoutConfirmPhase').style.display = 'none';
@@ -1926,6 +2053,9 @@
   window.addEventListener('storage', (e)=>{
     if(e.key === 'shopiffyAdminProducts') location.reload();
   });
+
+  // Reflect any existing login session in the header right away
+  updateAuthUI();
 </script>
 </body>
 </html>
